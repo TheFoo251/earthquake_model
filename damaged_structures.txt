@@ -1,0 +1,7 @@
+data/test/targets/mexico-earthquake_00000069_post_disaster_target.png
+data/test/targets/mexico-earthquake_00000076_post_disaster_target.png
+data/test/targets/mexico-earthquake_00000117_post_disaster_target.png
+data/test/targets/mexico-earthquake_00000124_post_disaster_target.png
+data/test/targets/mexico-earthquake_00000169_post_disaster_target.png
+data/test/targets/mexico-earthquake_00000183_post_disaster_target.png
+data/test/targets/mexico-earthquake_00000187_post_disaster_target.png
