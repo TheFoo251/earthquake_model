@@ -1,3 +1,4 @@
 #just the data folder(s)
-data/
+full_data/
+patch_data/
 extraction_test/
