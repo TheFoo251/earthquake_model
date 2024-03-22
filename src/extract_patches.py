@@ -5,71 +5,91 @@ from PIL import Image
 import os
 import numpy as np
 from matplotlib import pyplot as plt
-import sys.argv as arguments
+import sys
+import glob
 
 #@TODO -- get interation over files working
 
 #Parse arguments into constants
 # Usage: python3 extract_patches.py patch_size input_dir output dir
-PATCH_SIZE = int(arguments[1])
-INPUT_DIR = arguments[2]
-OUTPUT_DIR = arguments[3]
+PATCH_SIZE = int(sys.argv[1])
+INPUT_DIR = sys.argv[2]
+OUTPUT_DIR = sys.argv[3]
+
+#Globbing
+IMAGES = glob.glob(f"{INPUT_DIR}/images/*")
+MASKS = glob.glob(f"{INPUT_DIR}/targets/*")
+
 
 # The "center" of 32x32 is 15 (0 indexing)
 HALF = PATCH_SIZE // 2
 
-def calc_patch(pixel_coords):
-    x, y = tuple(pixel_coords)
-    return (x - HALF + 1, y - HALF + 1, x + HALF + 1, y + HALF +1)
+
 
 
 #@TODO -- refactor into functions and generalize to work on many different files
 
+def extract_patches(image_file_path, mask_file_path):
+    """
+    Extract patches given file paths
+    """
+    #Internal function to calculate patch
+    def calc_patch(pixel_coords):
+        x, y = tuple(pixel_coords)
+        return (x - HALF + 1, y - HALF + 1, x + HALF + 1, y + HALF +1)
 
-"""
-#def extract_patches(
+    # extract image file names for later
+    rgb_name = os.path.basename(image_file_path)[:-4]
+    mask_name = os.path.basename(mask_file_path)[:-4]
 
-# open images
-mask_image = Image.open(MASK_PATH)
-rgb_image = Image.open(IMAGE_PATH)
+    print("opening images...")
+    # open up the images for later
+    rgb_image = Image.open(image_file_path)
+    mask_image = Image.open(mask_file_path)
 
-# create proper mask from mask_image
-mask_array = np.array(mask_image) >= 2
+    # create mask array to use
+    mask_array = np.array(mask_image) >= 2
 
-#create an array from rgb image
-rgb_array = np.array(rgb_image)
-
-#@DEBUG --  display overlay
-#tensor_mask = np.stack((mask_array,)*3, axis=-1)
-#overlay_image = Image.fromarray(rgb_array*tensor_mask)
-#overlay_image.show()
-
-# get coordinates of damaged pixels
-damaged_pixels = np.argwhere(mask_array == 1)
-print(damaged_pixels)
-
-# for now, just try to get pixels that are within the borders- each point is within a border of the image.
-# each values should be between 16 and 1008  (1024-16)
-
-# bounded pixels = fdsafds
-
-# show an example of a patch
-#example_pixel = damaged_pixels[600]
-"""
+    # get coordinates of damaged pixels
+    damaged_pixels = np.argwhere(mask_array == 1)
 
 
-"""
-for coords in damaged_pixels:
-    patch_box = calc_patch(coords)
-    a, b, c, d = patch_box
+    #@TODO -- only work with pixels inside range and skip pixels
+    # for now, just try to get pixels that are within the borders- each point is within a border of the image.
+    # each values should be between 16 and 1008  (1024-16)
 
-    #mask
-    mask_patch = mask_image.crop(patch_box)
-    filename = f"{a}_{b}_{c}_{d}_mask.png"
-    mask_patch.save(os.path.join("extraction_test", "patches", filename))
+    #interate over skip
+    SKIP = 10
+    print(f"Generating {len(damaged_pixels)//SKIP} patches:")
+    for i, coords in enumerate(damaged_pixels[::SKIP]):
+        patch_box = calc_patch(coords)
+        a, b, c, d = patch_box
 
-    #rgb
-    rgb_patch = rgb_image.crop(patch_box)
-    filename = f"{a}_{b}_{c}_{d}_rgb.png"
-    mask_patch.save(os.path.join("extraction_test", "patches", filename))
-"""
+        #rgb
+        rgb_patch = rgb_image.crop(patch_box)
+        filename = f"{rgb_name}--patch{i:05d}.png"
+        rgb_patch.save(os.path.join(OUTPUT_DIR, "images", filename))
+
+        #mask
+        mask_patch = mask_image.crop(patch_box)
+        filename = f"{mask_name}--patch{i:05d}_mask.png"
+        mask_patch.save(os.path.join(OUTPUT_DIR, "targets", filename))
+
+    print("finished!")
+
+
+
+if __name__ == "__main__":
+    #@DEBUG
+    #print(PATCH_SIZE)
+    #print(IMAGES)
+    #print(MASKS)
+
+    for image, mask in zip(IMAGES, MASKS):
+        extract_patches(image, mask)
+
+
+    #@DEBUG --  display overlay
+    #tensor_mask = np.stack((mask_array,)*3, axis=-1)
+    #overlay_image = Image.fromarray(rgb_array*tensor_mask)
+    #overlay_image.show()
