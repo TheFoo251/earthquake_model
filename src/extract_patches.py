@@ -24,11 +24,6 @@ MASKS = glob.glob(f"{INPUT_DIR}/targets/*")
 # The "center" of 32x32 is 15 (0 indexing)
 HALF = PATCH_SIZE // 2
 
-
-
-
-#@TODO -- refactor into functions and generalize to work on many different files
-
 def extract_patches(image_file_path, mask_file_path):
     """
     Extract patches given file paths
@@ -82,8 +77,8 @@ def extract_patches(image_file_path, mask_file_path):
 if __name__ == "__main__":
     #@DEBUG
     #print(PATCH_SIZE)
-    #print(IMAGES)
-    #print(MASKS)
+
+    print(f"Unpacking {len(IMAGES)}...")
 
     for image, mask in zip(IMAGES, MASKS):
         extract_patches(image, mask)
