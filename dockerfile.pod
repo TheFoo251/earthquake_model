@@ -1,0 +1,22 @@
+FROM gw000/keras:2.1.4-py3-tf-cpu
+
+#RUN ping www.google.com
+
+# install dependencies from debian packages
+RUN apt-get update -qq \
+    && apt-get install --no-install-recommends -y \
+    python3-matplotlib \
+    python3-pillow
+
+# install dependencies from python packages
+RUN pip --no-cache-dir install \
+    pandas \
+    scikit-learn \
+    statsmodels
+
+# install your app
+ADD earthquake_model/ /srv/ai/
+RUN chmod +x /srv/ai/train_model.py
+
+# default command
+CMD ["/srv/ai/train_model.py"]

@@ -1,3 +1,4 @@
+#!/bin/python3
 """
 # Introduction
 
@@ -41,7 +42,7 @@ def image_generator(files, batch_size = 32, sz = (32, 32)):
 
         #extract a random batch
         batch = np.random.choice(files, size = batch_size)
-    
+
         #variables for collecting batches of inputs and outputs
         batch_x = []
         batch_y = []
@@ -50,8 +51,10 @@ def image_generator(files, batch_size = 32, sz = (32, 32)):
 
     for f in batch:
 
-        #get the masks (already preprocessed). Note that masks are png files
-        mask = Image.open(f'targets/{f[:-4]}.png')
+        #get the mtaching masks (already preprocessed) using the raw image file name
+        target_name = f[:44] + f[-21:-9] + ".png"
+        print(target_name)
+        mask = Image.open(f'targets/{target_name}')
         mask = np.array(mask.resize(sz))
 
         batch_y.append(mask)
@@ -84,7 +87,7 @@ SPLIT INTO BATCHES
 
 batch_size = 32
 
-all_files = os.listdir('images')
+all_files = os.listdir(os.path.join('patch_data', 'images'))
 shuffle(all_files)
 
 split = int(0.95 * len(all_files))
@@ -95,6 +98,11 @@ test_files  = all_files[split:]
 
 train_generator = image_generator(train_files, batch_size = batch_size)
 test_generator  = image_generator(test_files, batch_size = batch_size)
+
+
+#@DEBUG
+print(test_generator.size())
+sys.exit(0)
 
 
 """ @DEBUG
@@ -114,10 +122,10 @@ plt.imshow( np.concatenate([img, msk, img*msk], axis = 1))
 def mean_iou(y_true, y_pred):
     """
     IoU metric
-    
-    The intersection over union (IoU) metric is a simple metric used to evaluate the performance of a segmentation algorithm. 
+
+    The intersection over union (IoU) metric is a simple metric used to evaluate the performance of a segmentation algorithm.
     Given two masks $y_{true}, y_{pred}$ we evaluate
-    
+
     IoU = (yₜᵣᵤₑ ∩ yₚᵣₑ)/(yₜᵣᵤₑ ∪ yₚᵣₑ)
     """
     yt0 = y_true[:,:,:,0]
@@ -155,7 +163,7 @@ def unet(sz = (32, 32, 3)):
     x = Conv2DTranspose(ff2, 2, strides=(2, 2), padding='same') (x)
     x = Concatenate(axis=3)([x, layers[j]])
     j = j -1
-  
+
     #upsampling
     for i in range(0, 5):
       ff2 = ff2//2
@@ -165,17 +173,17 @@ def unet(sz = (32, 32, 3)):
       x = Conv2DTranspose(ff2, 2, strides=(2, 2), padding='same') (x)
       x = Concatenate(axis=3)([x, layers[j]])
       j = j -1
-  
-  
+
+
     #classification
     x = Conv2D(f, 3, activation='relu', padding='same') (x)
     x = Conv2D(f, 3, activation='relu', padding='same') (x)
     outputs = Conv2D(1, 1, activation='sigmoid') (x)
-  
+
     #model creation
     model = Model(inputs=[inputs], outputs=[outputs])
     model.compile(optimizer = 'rmsprop', loss = 'binary_crossentropy', metrics = [mean_iou])
-  
+
     return model
 
 
@@ -187,7 +195,7 @@ def build_callbacks():
     # Callbacks
     Simple functions to save the model at each epoch and show some predictions
 
-    """        
+    """
     checkpointer = ModelCheckpoint(filepath='unet.h5', verbose=0, save_best_only=True, save_weights_only=True)
     callbacks = [checkpointer, PlotLearning()]
     return callbacks
