@@ -11,10 +11,12 @@ import glob
 #@TODO -- get interation over files working
 
 #Parse arguments into constants
-# Usage: python3 extract_patches.py patch_size input_dir output dir
+# Usage: python3 extract_patches.py patch_size input_dir
 PATCH_SIZE = int(sys.argv[1])
 INPUT_DIR = sys.argv[2]
-OUTPUT_DIR = sys.argv[3]
+OUTPUT_DIR = f"patch_data_{PATCH_SIZE}"
+
+os.makedirs(f"{OUTPUT_DIR}/images", f"{OUTPUT_DIR}/targets"}
 
 #Globbing
 IMAGES = glob.glob(f"{INPUT_DIR}/images/*")

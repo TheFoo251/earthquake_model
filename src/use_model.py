@@ -17,8 +17,10 @@ import glob
 import random
 import cv2
 from random import shuffle
+import sys
 
-MODEL_PATH = os.path.join("model", "earthquake_unet.keras")
+
+MODEL_PATH = os.path.join("model", sys.argv[1])
 
 """
 TESTING (using hold data)
