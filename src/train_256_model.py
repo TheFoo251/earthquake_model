@@ -49,38 +49,33 @@ def image_generator(files, batch_size = 32, sz = (256, 256)):
         batch_x = []
         batch_y = []
 
+        for i, f in enumerate(batch):
 
+            mask = Image.open(f'targets/{f}')
+            mask = np.array(mask.resize(sz))
 
-    for f in batch:
+            batch_y.append(mask)
 
-        #get the mtaching masks (already preprocessed) using the raw image file name
-        target_name = f[:44] + f[-21:-9] + ".png"
-        print(target_name)
-        mask = Image.open(f'targets/{target_name}')
-        mask = np.array(mask.resize(sz))
+            #preprocess the raw images
+            raw = Image.open(f'images/{f}')
+            raw = raw.resize(sz) # @TODO -- figure out if I can remove this...
+            raw = np.array(raw)
 
-        batch_y.append(mask)
+            #check the number of channels because some of the images are RGBA or GRAY
+            if len(raw.shape) == 2:
+              raw = np.stack((raw,)*3, axis=-1)
 
-        #preprocess the raw images
-        raw = Image.open(f'images/{f}')
-        raw = raw.resize(sz) # @TODO -- figure out if I can remove this...
-        raw = np.array(raw)
+            else:
+              raw = raw[:,:,0:3]
 
-        #check the number of channels because some of the images are RGBA or GRAY
-        if len(raw.shape) == 2:
-          raw = np.stack((raw,)*3, axis=-1)
+            batch_x.append(raw)
 
-        else:
-          raw = raw[:,:,0:3]
+        #preprocess a batch of images and masks
+        batch_x = np.array(batch_x)/255. # this makes them floats!!
+        batch_y = np.array(batch_y)
+        batch_y = np.expand_dims(batch_y,3)
 
-        batch_x.append(raw)
-
-    #preprocess a batch of images and masks
-    batch_x = np.array(batch_x)/255. # this makes them floats!!
-    batch_y = np.array(batch_y)
-    batch_y = np.expand_dims(batch_y,3)
-
-    yield (batch_x, batch_y)
+        yield (batch_x, batch_y)
 
 
 """
@@ -89,7 +84,7 @@ SPLIT INTO BATCHES
 
 batch_size = 32
 
-all_files = os.listdir(os.path.join('256_data', 'images'))
+all_files = os.listdir(os.path.join('patch_data_256', 'images'))
 shuffle(all_files)
 
 split = int(0.95 * len(all_files))
@@ -102,7 +97,7 @@ train_generator = image_generator(train_files, batch_size = batch_size)
 test_generator  = image_generator(test_files, batch_size = batch_size)
 
 
-#@DEBUG
+# @DEBUG
 #print(test_generator)
 #sys.exit(0)
 
@@ -196,7 +191,7 @@ def build_callbacks():
     Simple functions to save the model at each epoch and show some predictions
 
     """
-    checkpointer = ModelCheckpoint(filepath='unet.weights. h5', verbose=0, save_best_only=True, save_weights_only=True)
+    checkpointer = ModelCheckpoint(filepath='unet.weights.h5', verbose=0, save_best_only=True, save_weights_only=True)
     callbacks = [checkpointer, PlotLearning()]
     return callbacks
 
@@ -209,7 +204,7 @@ class PlotLearning(keras.callbacks.Callback):
         self.val_losses = []
         self.acc = []
         self.val_acc = []
-        #self.fig = plt.figure()
+        self.fig = plt.figure()
         self.logs = []
     def on_epoch_end(self, epoch, logs={}):
         self.logs.append(logs)
@@ -221,6 +216,7 @@ class PlotLearning(keras.callbacks.Callback):
         self.i += 1
         print('i=',self.i,'loss=',logs.get('loss'),'val_loss=',logs.get('val_loss'),'mean_iou=',logs.get('mean_iou'),'val_mean_iou=',logs.get('val_mean_iou'))
 
+        """
         #choose a random test image and preprocess
         path = np.random.choice(test_files)
         raw = Image.open(f'images/{path}')
@@ -241,17 +237,18 @@ class PlotLearning(keras.callbacks.Callback):
         plt.axis('off')
         plt.imshow(combined)
         plt.show()
-
+        """
 
 """
 TRAIN AND SAVE
 """
-
+print("training!")
 train_steps = len(train_files) // batch_size
 test_steps = len(test_files) // batch_size
+print(f"Train Steps: {train_steps}  Test Steps: {test_steps}")
 model.fit(train_generator,
-                    epochs = 30, steps_per_epoch = train_steps,validation_data = test_generator, validation_steps = test_steps,
-                    callbacks = build_callbacks(), verbose = 0)
+                    epochs = 30, steps_per_epoch = train_steps,validation_data = test_generator, validation_steps = test_steps, verbose = 1)
+                    #callbacks = build_callbacks(), verbose = 2)
 
 
 #Save model

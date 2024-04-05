@@ -16,11 +16,15 @@ PATCH_SIZE = int(sys.argv[1])
 INPUT_DIR = sys.argv[2]
 OUTPUT_DIR = f"patch_data_{PATCH_SIZE}"
 
-os.makedirs(f"{OUTPUT_DIR}/images", f"{OUTPUT_DIR}/targets"}
+os.makedirs(f"{OUTPUT_DIR}/images")
+os.makedirs(f"{OUTPUT_DIR}/targets")
 
 #Globbing
-IMAGES = glob.glob(f"{INPUT_DIR}/images/*")
-MASKS = glob.glob(f"{INPUT_DIR}/targets/*")
+IMAGES = sorted(glob.glob(f"{INPUT_DIR}/images/*"))
+MASKS = sorted(glob.glob(f"{INPUT_DIR}/targets/*"))
+
+#print(IMAGES)
+#print(MASKS)
 
 
 # The "center" of 32x32 is 15 (0 indexing)
@@ -39,7 +43,7 @@ def extract_patches(image_file_path, mask_file_path):
     rgb_name = os.path.basename(image_file_path)[:-4]
     mask_name = os.path.basename(mask_file_path)[:-4]
 
-    print("opening images...")
+    # print("opening images...")
     # open up the images for later
     rgb_image = Image.open(image_file_path)
     mask_image = Image.open(mask_file_path)
@@ -57,7 +61,8 @@ def extract_patches(image_file_path, mask_file_path):
 
     #interate over skip
     SKIP = 10
-    print(f"Generating {len(damaged_pixels)//SKIP} patches:")
+    total_patches = len(damaged_pixels)//SKIP
+    # print(f"Generating {num_patches} patches:")
     for i, coords in enumerate(damaged_pixels[::SKIP]):
         patch_box = calc_patch(coords)
         a, b, c, d = patch_box
@@ -69,10 +74,9 @@ def extract_patches(image_file_path, mask_file_path):
 
         #mask
         mask_patch = mask_image.crop(patch_box)
-        filename = f"{mask_name}--patch{i:05d}_mask.png"
+        filename = f"{mask_name}--patch{i:05d}.png".replace("_target", "")
         mask_patch.save(os.path.join(OUTPUT_DIR, "targets", filename))
 
-    print("finished!")
 
 
 
@@ -80,11 +84,16 @@ if __name__ == "__main__":
     #@DEBUG
     #print(PATCH_SIZE)
 
-    print(f"Unpacking {len(IMAGES)}...")
+    total_images = len(IMAGES)
+    count = 1
 
     for image, mask in zip(IMAGES, MASKS):
+        print(f"Unpacking image {count}/{total_images}", end="\r", flush=True)
         extract_patches(image, mask)
+        count += 1
 
+
+    print("finished!")
 
     #@DEBUG --  display overlay
     #tensor_mask = np.stack((mask_array,)*3, axis=-1)
