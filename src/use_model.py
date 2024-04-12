@@ -20,15 +20,16 @@ from random import shuffle
 import sys
 
 
-MODEL_PATH = os.path.join("model", sys.argv[1])
+MODEL_PATH = sys.argv[1]
+IMAGE_PATH = sys.argv[2]
 
 """
 TESTING (using hold data)
 @TODO -- actually use hold data instead of testing image...
 """
-model = keras.saving.load_model(MODEL_PATH, custom_objects=None, compile=True, safe_mode=True)
+model =keras.models.load_model(MODEL_PATH, custom_objects=None, compile=True)
 
-raw = Image.open('test.jpg')
+raw = Image.open(IMAGE_PATH)
 raw = np.array(raw.resize((256, 256)))/255.
 raw = raw[:,:,0:3]
 

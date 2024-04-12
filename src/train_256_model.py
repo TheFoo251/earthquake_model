@@ -116,23 +116,6 @@ plt.imshow( np.concatenate([img, msk, img*msk], axis = 1))
 
 
 
-# IoU Metric
-def mean_iou(y_true, y_pred):
-    """
-    IoU metric
-
-    The intersection over union (IoU) metric is a simple metric used to evaluate the performance of a segmentation algorithm.
-    Given two masks $y_{true}, y_{pred}$ we evaluate
-
-    IoU = (yₜᵣᵤₑ ∩ yₚᵣₑ)/(yₜᵣᵤₑ ∪ yₚᵣₑ)
-    """
-    yt0 = y_true[:,:,:,0]
-    yp0 = K.cast(y_pred[:,:,:,0] > 0.5, 'float32')
-    inter = tf.math.count_nonzero(tf.logical_and(tf.equal(yt0, 1), tf.equal(yp0, 1)))
-    union = tf.math.count_nonzero(tf.add(yt0, yp0))
-    iou = tf.where(tf.equal(union, 0), 1., tf.cast(inter/union, 'float32'))
-    return iou
-
 def unet(sz = (256, 256, 3)):
     """
     ACTUAL MODEL!
@@ -178,67 +161,12 @@ def unet(sz = (256, 256, 3)):
 
     #model creation
     model = Model(inputs=[inputs], outputs=[outputs])
-    model.compile(optimizer = 'rmsprop', loss = 'binary_crossentropy', metrics = [mean_iou])
+    model.compile(optimizer = 'rmsprop', loss = 'binary_crossentropy')
 
     return model
 
 
 model = unet()
-
-#Callbacks
-def build_callbacks():
-    """
-    # Callbacks
-    Simple functions to save the model at each epoch and show some predictions
-
-    """
-    checkpointer = ModelCheckpoint(filepath='unet.weights.h5', verbose=0, save_best_only=True, save_weights_only=True)
-    callbacks = [checkpointer, PlotLearning()]
-    return callbacks
-
-# inheritance for training process plot
-class PlotLearning(keras.callbacks.Callback):
-    def on_train_begin(self, logs={}):
-        self.i = 0
-        self.x = []
-        self.losses = []
-        self.val_losses = []
-        self.acc = []
-        self.val_acc = []
-        self.fig = plt.figure()
-        self.logs = []
-    def on_epoch_end(self, epoch, logs={}):
-        self.logs.append(logs)
-        self.x.append(self.i)
-        self.losses.append(logs.get('loss'))
-        self.val_losses.append(logs.get('val_loss'))
-        self.acc.append(logs.get('mean_iou'))
-        self.val_acc.append(logs.get('val_mean_iou'))
-        self.i += 1
-        print('i=',self.i,'loss=',logs.get('loss'),'val_loss=',logs.get('val_loss'),'mean_iou=',logs.get('mean_iou'),'val_mean_iou=',logs.get('val_mean_iou'))
-
-        """
-        #choose a random test image and preprocess
-        path = np.random.choice(test_files)
-        raw = Image.open(f'images/{path}')
-        raw = np.array(raw.resize((256, 256)))/255.
-        raw = raw[:,:,0:3]
-
-        #predict the mask
-        pred = model.predict(np.expand_dims(raw, 0))
-
-        #mask post-processing
-        msk  = pred.squeeze()
-        msk = np.stack((msk,)*3, axis=-1)
-        msk[msk >= 0.5] = 1
-        msk[msk < 0.5] = 0
-
-        #show the mask and the segmented image
-        combined = np.concatenate([raw, msk, raw* msk], axis = 1)
-        plt.axis('off')
-        plt.imshow(combined)
-        plt.show()
-        """
 
 """
 TRAIN AND SAVE
@@ -249,7 +177,6 @@ test_steps = len(test_files) // batch_size
 print(f"Train Steps: {train_steps}  Test Steps: {test_steps}")
 model.fit(train_generator,
                     epochs = 30, steps_per_epoch = train_steps,validation_data = test_generator, validation_steps = test_steps, verbose=2)
-                    # callbacks = build_callbacks(), verbose = 2)
 
 
 #Save model
