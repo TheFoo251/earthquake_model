@@ -1,37 +1,91 @@
 #Imports
-import numpy as np
-import matplotlib.pyplot as plt
 import os
-from PIL import Image
+import PIL.Image
+import PIL.ImageTk
 import keras
-from keras.models import Model
-from keras.layers import Conv2D, MaxPooling2D, Input, Conv2DTranspose, Concatenate, BatchNormalization, UpSampling2D
-from keras.layers import  Dropout, Activation
-from keras.optimizers import Adam, SGD
-from keras.layers import LeakyReLU
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
-from keras import backend as K
-from keras.utils import plot_model
 import tensorflow as tf
 import glob
 import random
 import cv2
 from random import shuffle
 import sys
+from tkinter import *
+from tkinter.filedialog import askopenfilename
+import numpy as np
 
 
-MODEL_PATH = sys.argv[1]
-IMAGE_PATH = sys.argv[2]
+class MatPlotLibGUI:
+
+    def __init__(self):
+
+        print("  initializing the Helper class ...")
+        self.root = Tk()
+        self.root.title("Model")
+
+        # initialize grid
+        self.grid = Frame(self.root)
+        self.grid.grid_columnconfigure(4, weight=1)
+        self.grid.grid_rowconfigure(2, weight=1)
+
+        # add buttons and labels
+        self.load_image_button = Button(self.grid, text="Load Image", command=self.load_image)
+        self.load_image_button.grid(row=1, column=1)
+
+        self.image_name = Label(self.grid, text="none")
+        self.image_name.grid(row=1, column=2, sticky='e')
+
+        self.load_model_button = Button(self.grid, text="Load Model", command=self.load_model)
+        self.load_model_button.grid(row=1, column=3)
+
+        self.model_name = Label(self.grid, text="none")
+        self.model_name.grid(row=1, column=4, sticky='e')
+
+        # Create frames for images
+        self.image_frame = Frame(self.grid)
+        self.image_frame.grid(row=2, column=1, columnspan=2)
+
+        self.prediction_frame = Frame(self.grid)
+        self.prediction_frame.grid(row=2, column=3, columnspan=2)
+
+        self.grid.pack()
+        print("  done init!")
+
+    def load_model(self, model_path):
+        model = keras.models.load_model(model_path, custom_objects=None, compile=True)
+
+    def load_image(self):
+        path = askopenfilename()
+        self.image_name.config(text = os.path.basename(path))
+        raw = PIL.Image.open(path)
+        og_img = PIL.ImageTk.PhotoImage(raw)
+        og_label = Label(image=og_img)
+        raw = np.array(raw.resize((256, 256)))/255.
+        raw = raw[:,:,0:3]
+
+
+    def read_from_file(self):
+        """
+        Spawn a dialogue to choose a file and read data from it
+        """
+
+    def run(self):
+        print("    Entering the Tk main event loop")
+        self.root.mainloop()
+        print("    Leaving the Tk main event loop")
+
+
+
+
 
 """
 TESTING (using hold data)
 @TODO -- actually use hold data instead of testing image...
 """
-model =keras.models.load_model(MODEL_PATH, custom_objects=None, compile=True)
 
-raw = Image.open(IMAGE_PATH)
-raw = np.array(raw.resize((256, 256)))/255.
-raw = raw[:,:,0:3]
+
+
+"""
+
 
 #predict the mask
 pred = model.predict(np.expand_dims(raw, 0))
@@ -47,4 +101,11 @@ combined = np.concatenate([raw, msk, raw* msk], axis = 1)
 plt.axis('off')
 plt.imshow(combined)
 plt.show()
+"""
 
+if __name__ == '__main__':
+
+    print("Inside main...")
+    gui = MatPlotLibGUI()
+    gui.run()
+    print("done!")
