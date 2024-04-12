@@ -35,6 +35,7 @@ import sys
 Note that we have two folders. The first one is `images` which contains the png images and `targets` which contains the masks.
 """
 
+DATA_DIR = "patch_data_256"
 
 # Generators
 def image_generator(files, batch_size = 32, sz = (256, 256)):
@@ -51,13 +52,13 @@ def image_generator(files, batch_size = 32, sz = (256, 256)):
 
         for i, f in enumerate(batch):
 
-            mask = Image.open(f'targets/{f}')
+            mask = Image.open(f'{DATA_DIR}/targets/{f}')
             mask = np.array(mask.resize(sz))
 
             batch_y.append(mask)
 
             #preprocess the raw images
-            raw = Image.open(f'images/{f}')
+            raw = Image.open(f'{DATA_DIR}/images/{f}')
             raw = raw.resize(sz) # @TODO -- figure out if I can remove this...
             raw = np.array(raw)
 
@@ -247,12 +248,12 @@ train_steps = len(train_files) // batch_size
 test_steps = len(test_files) // batch_size
 print(f"Train Steps: {train_steps}  Test Steps: {test_steps}")
 model.fit(train_generator,
-                    epochs = 30, steps_per_epoch = train_steps,validation_data = test_generator, validation_steps = test_steps, verbose = 1)
-                    #callbacks = build_callbacks(), verbose = 2)
+                    epochs = 30, steps_per_epoch = train_steps,validation_data = test_generator, validation_steps = test_steps, verbose=2)
+                    # callbacks = build_callbacks(), verbose = 2)
 
 
 #Save model
-model.save(os.path.join("model", "256_unet.keras"))
+model.save(os.path.join("models", "256_unet.keras"))
 
 
 
