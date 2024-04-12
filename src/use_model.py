@@ -41,11 +41,11 @@ class MatPlotLibGUI:
         self.model_name.grid(row=1, column=4, sticky='e')
 
         # Create frames for images
-        self.image_frame = Frame(self.grid)
-        self.image_frame.grid(row=2, column=1, columnspan=2)
+        self.image_label = Label(self.grid)
+        self.image_label.grid(row=2, column=1, columnspan=2)
 
-        self.prediction_frame = Frame(self.grid)
-        self.prediction_frame.grid(row=2, column=3, columnspan=2)
+        self.prediction_label = Label(self.grid)
+        self.prediction_label.grid(row=2, column=3, columnspan=2)
 
         self.grid.pack()
         print("  done init!")
@@ -57,8 +57,9 @@ class MatPlotLibGUI:
         path = askopenfilename()
         self.image_name.config(text = os.path.basename(path))
         raw = PIL.Image.open(path)
-        og_img = PIL.ImageTk.PhotoImage(raw)
-        og_label = Label(image=og_img)
+        og_img = PIL.ImageTk.PhotoImage(raw.resize((256, 256)))
+        self.image_label.configure(image=og_img)
+        self.image_label.image = og_img
         raw = np.array(raw.resize((256, 256)))/255.
         raw = raw[:,:,0:3]
 
