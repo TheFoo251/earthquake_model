@@ -15,21 +15,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from PIL import Image
-import keras
-from keras.models import Model
-from keras.layers import Conv2D, MaxPooling2D, Input, Conv2DTranspose, Concatenate, BatchNormalization, UpSampling2D
-from keras.layers import  Dropout, Activation
-from keras.optimizers import Adam, SGD
-from keras.layers import LeakyReLU
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
-from keras import backend as K
-from keras.utils import plot_model
-import tensorflow as tf
 import glob
 import random
 import cv2
 from random import shuffle
 import sys
+
+# Import tensorflow/keras
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Input, Conv2DTranspose, Concatenate, BatchNormalization, UpSampling2D
+from tensorflow.keras.layers import  Dropout, Activation
+from tensorflow.keras.optimizers import Adam, SGD
+from tensorflow.keras.layers import LeakyReLU
+from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping, CSVLogger # ModelCheckpoint
+from tensorflow.keras import backend as K
+from tensorflow.keras.utils import plot_model
+
+
+# Ensure tensorflow is actually using the GPU!!
+tf.config.list_physical_devices('GPU')
 
 """
 Note that we have two folders. The first one is `images` which contains the png images and `targets` which contains the masks.
@@ -175,9 +181,17 @@ print("training!")
 train_steps = len(train_files) // batch_size
 test_steps = len(test_files) // batch_size
 print(f"Train Steps: {train_steps}  Test Steps: {test_steps}")
-model.fit(train_generator,
-                    epochs = 30, steps_per_epoch = train_steps,validation_data = test_generator, validation_steps = test_steps, verbose=2)
 
+# Callbacks
+csv_logger = CSVLogger('models/256_training.log')
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                              patience=5, min_lr=0.001)
+stop_early = EarlyStopping(patience=3)
+
+model.fit(train_generator, epochs = 30, steps_per_epoch = train_steps,validation_data = test_generator,
+            validation_steps = test_steps, callbacks=[csv_logger, reduce_lr, stop_early], verbose=2)
+
+model.get_weights()
 
 #Save model
 model.save(os.path.join("models", "256_unet.keras"))
