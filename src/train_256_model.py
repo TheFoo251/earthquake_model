@@ -41,7 +41,9 @@ tf.config.list_physical_devices('GPU')
 Note that we have two folders. The first one is `images` which contains the png images and `targets` which contains the masks.
 """
 
+#constants
 DATA_DIR = "patch_data_256"
+PROBABALISTIC_LOSSES = ["binary_crossentropy", "binary_focal_crossentropy", "categorical_crossentropy", "categorical_focal_crossentropy", "sparse_categorical_crossentropy", "poisson", "kl_divergence", "ctc" ]
 
 # Generators
 def image_generator(files, batch_size = 32, sz = (256, 256)):
@@ -167,7 +169,7 @@ def unet(sz = (256, 256, 3)):
 
     #model creation
     model = Model(inputs=[inputs], outputs=[outputs])
-    model.compile(optimizer = 'rmsprop', loss = 'binary_crossentropy')
+    model.compile(optimizer = 'rmsprop', loss = 'binary_crossentropy', metrics=['accuracy'])
 
     return model
 
