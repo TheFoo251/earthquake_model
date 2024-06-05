@@ -43,7 +43,44 @@ Note that we have two folders. The first one is `images` which contains the png 
 
 #constants
 DATA_DIR = "patch_data_256"
-PROBABALISTIC_LOSSES = ["binary_crossentropy", "binary_focal_crossentropy", "categorical_crossentropy", "categorical_focal_crossentropy", "sparse_categorical_crossentropy", "poisson", "kl_divergence", "ctc" ]
+
+# losses used for classification
+PROBABALISTIC_LOSSES = ["binary_crossentropy", "binary_focal_crossentropy", 
+"poisson", "kl_divergence" ]
+
+# "ctc" ]
+
+""" for using extra labels...
+"categorical_crossentropy", "categorical_focal_crossentropy", "sparse_categorical_crossentropy",
+"""
+
+
+#hinge loss?
+# LOOK SPECIFICIALLY FOR IMAGE SEGMENTATION LOSS
+# https://github.com/JunMa11/SegLossOdyssey
+
+
+# make dice loss
+# https://dev.to/_aadidev/3-common-loss-functions-for-image-segmentation-545o
+
+class DiceLoss(tf.keras.losses.Loss):
+    def __init__(self, smooth=1e-6, gama=2):
+        super(DiceLoss, self).__init__()
+        self.name = 'NDL'
+        self.smooth = smooth
+        self.gama = gama
+
+    def call(self, y_true, y_pred):
+        y_true, y_pred = tf.cast(
+            y_true, dtype=tf.float32), tf.cast(y_pred, tf.float32)
+        nominator = 2 * \
+            tf.reduce_sum(tf.multiply(y_pred, y_true)) + self.smooth
+        denominator = tf.reduce_sum(
+            y_pred ** self.gama) + tf.reduce_sum(y_true ** self.gama) + self.smooth
+        result = 1 - tf.divide(nominator, denominator)
+        return result
+
+
 
 # Generators
 def image_generator(files, batch_size = 32, sz = (256, 256)):
@@ -80,7 +117,7 @@ def image_generator(files, batch_size = 32, sz = (256, 256)):
             batch_x.append(raw)
 
         #preprocess a batch of images and masks
-        batch_x = np.array(batch_x)/255. # this makes them floats!!
+        batch_x = np.array(batch_x)/255.0 # this makes them floats!!
         batch_y = np.array(batch_y)
         batch_y = np.expand_dims(batch_y,3)
 
