@@ -8,3 +8,4 @@ data-archive/
 models/
 patch_data_256/
 dir/
+src/__pycache__
