@@ -172,7 +172,14 @@ model.compile(
 )
 
 callbacks = [
-    keras.callbacks.ModelCheckpoint("models/new-model.keras", save_best_only=True)
+    keras.callbacks.ModelCheckpoint("models/new-model.keras", save_best_only=True),
+    keras.callbacks.CSVLogger('models/256_training.log'),
+    keras.callbacks.ReduceLROnPlateau(
+        monitor='val_loss',
+        factor=0.2,
+        patience=5,
+        min_lr=0.001),
+    keras.callbacks.EarlyStopping(patience=3),
 ]
 
 # Train the model, doing validation at the end of each epoch.
