@@ -160,7 +160,7 @@ full_ds = get_dataset(
     target_img_paths
 )
 
-splitpoint = len(full_ds) * 0.8
+splitpoint = int(len(full_ds) * 0.8)
 train_ds = full_ds.take(splitpoint)
 valid_ds = full_ds.skip(splitpoint)
 
