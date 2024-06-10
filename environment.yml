@@ -1,4 +1,4 @@
-name: new_ai
+name: earthquake-model
 channels:
   - conda-forge
   - defaults
