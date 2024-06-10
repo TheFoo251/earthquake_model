@@ -10,6 +10,9 @@ import glob
 
 #@TODO -- get interation over files working
 
+
+
+
 #Parse arguments into constants
 # Usage: python3 extract_patches.py patch_size input_dir
 PATCH_SIZE = int(sys.argv[1])
@@ -83,6 +86,7 @@ def extract_patches(image_file_path, mask_file_path):
 if __name__ == "__main__":
     #@DEBUG
     #print(PATCH_SIZE)
+    print("WARNING-- this script REMOVES class data, normalizes to 0 or 1")
 
     total_images = len(IMAGES)
     count = 1
