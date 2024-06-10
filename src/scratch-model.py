@@ -160,8 +160,9 @@ full_ds = get_dataset(
     target_img_paths
 )
 
-train_ds = full_ds.take(len(full_ds)*0.8)
-valid_ds = full_ds.take(len(full_ds)*0.2)
+splitpoint = len(full_ds) * 0.8
+train_ds = full_ds.take(splitpoint)
+valid_ds = full_ds.skip(splitpoint)
 
 # Configure the model for training.
 # We use the "sparse" version of categorical_crossentropy
