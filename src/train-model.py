@@ -205,7 +205,7 @@ callbacks = [
 ]
 
 # Train the model, doing validation at the end of each epoch.
-epochs = 50
+epochs = 30
 model.fit(
     train_ds,
     epochs=epochs,
@@ -213,11 +213,10 @@ model.fit(
     callbacks=callbacks,
 )
 
-"""
 model.get_weights()
 
 #Save model
-model.save(os.path.join("models", "256_unet.keras"))
-"""
+model.save(os.path.join("models", f"{patch_size}_unet.keras"))
+
 
     
