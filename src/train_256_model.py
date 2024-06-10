@@ -227,8 +227,14 @@ reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
                               patience=5, min_lr=0.001)
 stop_early = EarlyStopping(patience=3)
 
-model.fit(train_generator, epochs = 30, steps_per_epoch = train_steps,validation_data = test_generator,
-            validation_steps = test_steps, callbacks=[csv_logger, reduce_lr, stop_early], verbose=2)
+model.fit(
+    train_generator,
+    epochs = 30,
+    steps_per_epoch = train_steps,
+    validation_data = test_generator,
+    validation_steps = test_steps,
+    callbacks=[csv_logger, reduce_lr, stop_early],
+)
 
 model.get_weights()
 

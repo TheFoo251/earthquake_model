@@ -10,8 +10,13 @@ from tensorflow import io as tf_io
 from keras import layers
 import random
 
+#debugging import
+#from model_profiler import model_profiler
+
+
 
 #gpu wizardry
+"""
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
   try:
@@ -24,13 +29,13 @@ if gpus:
     # Memory growth must be set before GPUs have been initialized
     print(e)
 
+"""
 
-
-input_dir = "data/images/"
-target_dir = "data/targets/"
-img_size = (1024, 1024)
+input_dir = "patch_data_256/images/"
+target_dir = "patch_data_256/targets/"
+img_size = (256, 256)
 num_classes = 4 # 0-no damage, 1-minor, 2-major, 3-destroyed
-batch_size = 8
+batch_size = 32
 
 input_img_paths = sorted(
     [
@@ -79,9 +84,6 @@ def get_dataset(
     dataset = tf_data.Dataset.from_tensor_slices((input_img_paths, target_img_paths))
     dataset = dataset.map(load_img_masks, num_parallel_calls=tf_data.AUTOTUNE)
     return dataset.batch(batch_size)
-
-
-
 
 
 def get_model(img_size, num_classes):
@@ -146,28 +148,20 @@ def get_model(img_size, num_classes):
 model = get_model(img_size, num_classes)
 model.summary()
 
+#profile = model_profiler(model, batch_size)
+#print(profile)
 
-# Split our img paths into a training and a validation set
-val_samples = int(len(input_img_paths)*0.2)
-random.Random(1337).shuffle(input_img_paths)
-random.Random(1337).shuffle(target_img_paths)
-train_input_img_paths = input_img_paths[:-val_samples]
-train_target_img_paths = target_img_paths[:-val_samples]
-val_input_img_paths = input_img_paths[-val_samples:]
-val_target_img_paths = target_img_paths[-val_samples:]
+#exit()
 
-# Instantiate dataset for each split
-# Limit input files in `max_dataset_len` for faster epoch training time.
-# Remove the `max_dataset_len` arg when running with full dataset.
-train_dataset = get_dataset(
+full_ds = get_dataset(
     batch_size,
     img_size,
-    train_input_img_paths,
-    train_target_img_paths
+    input_img_paths,
+    target_img_paths
 )
-valid_dataset = get_dataset(
-    batch_size, img_size, val_input_img_paths, val_target_img_paths
-)
+
+train_ds = full_ds.take(len(full_ds)*0.8)
+valid_ds = full_ds.take(len(full_ds)*0.2)
 
 # Configure the model for training.
 # We use the "sparse" version of categorical_crossentropy
@@ -183,11 +177,10 @@ callbacks = [
 # Train the model, doing validation at the end of each epoch.
 epochs = 50
 model.fit(
-    train_dataset,
+    train_ds,
     epochs=epochs,
-    validation_data=valid_dataset,
+    validation_data=valid_ds,
     callbacks=callbacks,
-    verbose=2,
 )
 
     
