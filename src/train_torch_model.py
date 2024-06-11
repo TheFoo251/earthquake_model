@@ -18,7 +18,7 @@ from src.torch_utils import (
 # Hyperparameters
 LEARNING_RATE = 1e-4
 DEVICE = "cuda" if torch.cuda.is_available() else exit()
-BATCH_SIZE = 8
+BATCH_SIZE = 32
 NUM_EPOCHS = 100
 NUM_WORKERS = 2
 IMAGE_HEIGHT = 256
