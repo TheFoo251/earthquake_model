@@ -75,7 +75,7 @@ class UNET(nn.Module):
         return self.final_conv(x)
         
 def test():
-    x = torch.randn((3, 1, 160, 160))
+    x = torch.randn((3, 1, 161, 161))
     model = UNET(in_channels=1, out_channels=1)
     preds = model(x)
     print(preds.shape)
