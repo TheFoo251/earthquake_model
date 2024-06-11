@@ -4,9 +4,9 @@ from albumentations.pytorch import ToTensorV2
 from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
-from torch-unet import UNET
+from torch_unet import UNET
 
-from torch-utils import (
+from torch_utils import (
     load_checkpoint,
     save_checkpoint,
     get_loaders,
@@ -114,7 +114,7 @@ def main():
             val_loader, model, folder="saved_images/", device=DEVICE
         )
     
-if __name__ == "__main__:
+if __name__ == "__main__":
     main()
 
 
