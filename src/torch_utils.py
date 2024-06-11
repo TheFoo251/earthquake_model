@@ -18,9 +18,13 @@ def get_loaders(
     batch_size,
     num_workers=4,
     pin_memory=True,
-    transforms
+    transforms=None
 ):
-    full_ds = EarthquakeDataset(image_dir=img_dir, mask_dir=mask_dir, transforms)
+    full_ds = EarthquakeDataset(
+        image_dir=img_dir,
+        mask_dir=mask_dir,
+        transform=transforms
+    )
     num_train = int(len(full_ds) * 0.9)
     train_ds, val_ds = torch.utils.data.random_split(
                                         full_ds,
@@ -62,7 +66,7 @@ def check_accuracy(loader, model, device="cuda"):
             preds = torch.sigmoid(model(x))
             preds = (preds > 0.5).float()
             num_correct += (preds == y).sum()
-            num_pixels torch.numel(preds)
+            num_pixels += torch.numel(preds)
             dice_score += (2 * (pred*y).sum()) / (
                 (preds + y).sum() + 1e-8
             )
@@ -73,11 +77,11 @@ def check_accuracy(loader, model, device="cuda"):
     print(f"Dice score: {dice_score/len(loader)}")
     model.train()
     
-    def save_predictions_as_imgs(
-        loader, model, folder="saved_images/", device="cuda"
-    ):
-        model.eval()
-        for idx, (x, y) in enumerate(loader):
+def save_predictions_as_imgs(
+    loader, model, folder="saved_images/", device="cuda"
+):
+    model.eval()
+    for idx, (x, y) in enumerate(loader):
         x = x.to(device)
         with torch.no_grad():
             preds = torch.sigmoid(model(x))
@@ -89,8 +93,8 @@ def check_accuracy(loader, model, device="cuda"):
                 y.unsqueeze(1),
                 f"{folder}/{idx}_real.png"
             )
-            
-        model.train()
+        
+    model.train()
     
     
     

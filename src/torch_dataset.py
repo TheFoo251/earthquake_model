@@ -9,7 +9,7 @@ class EarthquakeDataset(Dataset):
         self.mask_dir = mask_dir
         self.transform = transform
         self.images = os.listdir(image_dir)
-        self.masks = os.listdir(masks)
+        self.masks = os.listdir(mask_dir)
         
     def __len__(self):
         return len(self.images)

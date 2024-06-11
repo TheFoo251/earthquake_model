@@ -17,7 +17,7 @@ from src.torch_utils import (
 
 # Hyperparameters
 LEARNING_RATE = 1e-4
-DEVICE = "cuda" if torch.cuda.is_availible() else exit()
+DEVICE = "cuda" if torch.cuda.is_available() else exit()
 BATCH_SIZE = 8
 NUM_EPOCHS = 100
 NUM_WORKERS = 2
@@ -34,10 +34,11 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
     for batch_idx, (data, targets) in enumerate(loop):
         data.to(DEVICE)
         # important for binary crossentropy to cast as float??
-        targets = targets.float().unsqeeze(1).to(DEVICE)
+        targets = targets.float().unsqueeze(1).to(DEVICE)
         
-        #forward TODO -- look up what float16 training is
-        with torch.cuda.autocast():
+        #forward 
+        #TODO -- look up what float16 training is
+        with torch.cuda.amp.autocast():
             predictions = model(data)
             loss = loss_fn(predictions, target)
             
