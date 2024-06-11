@@ -57,8 +57,8 @@ def main():
         [
             A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH), # not necessary
             A.Rotate(limit=35, p=1.0),
-            A.HorizontalFlip(p=0.5)
-            A.VerticalFlip(p=0.1)
+            A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.1),
             A.Normalize( # basically just divides by 255
                 mean=[0.0, 0.0, 0.0],
                 std=[1.0, 1.0, 1.0],
