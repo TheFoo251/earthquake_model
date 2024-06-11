@@ -81,13 +81,13 @@ for input_path, target_path in zip(input_img_paths[:10], target_img_paths[:10]):
 
 
 
-def get_dataset(
+def get_datasets(
     batch_size,
     img_size,
     input_img_paths,
     target_img_paths,
 ):
-    """Returns a TF Dataset."""
+    """Returns both TF Datasets."""
 
     def load_img_masks(input_img_path, target_img_path):
         input_img = tf_io.read_file(input_img_path)
@@ -102,10 +102,27 @@ def get_dataset(
 
         return input_img, target_img
         
-    # For faster debugging, limit the size of data
+    # dataset pipeline
     dataset = tf_data.Dataset.from_tensor_slices((input_img_paths, target_img_paths))
-    dataset = dataset.map(load_img_masks, num_parallel_calls=tf_data.AUTOTUNE)
-    return dataset.batch(batch_size)
+    splitpoint = int(len(dataset) * 0.8)
+    train_ds = dataset.take(splitpoint)
+    test_ds = dataset.skip(splitpoint)
+    
+    #train (cache THEN batch)
+    train_ds = train_ds.map(load_img_masks, num_parallel_calls=tf_data.AUTOTUNE)
+    #train_ds = train_ds.cache()
+    train_ds = train_ds.shuffle(len(train_ds))
+    train_ds = train_ds.batch(batch_size)
+    #train_ds = train_ds.prefetch(tf.data.AUTOTUNE)
+ 
+    #test (batch THEN cache)
+    test_ds = test_ds.map(load_img_masks, num_parallel_calls=tf_data.AUTOTUNE)
+    test_ds = test_ds.batch(batch_size)
+    #test_ds = test_ds.cache()
+    #test_ds = test_ds.prefetch(tf.data.AUTOTUNE)
+
+
+    return train_ds, test_ds
 
 
 def get_model(img_size, num_classes):
@@ -175,16 +192,14 @@ model.summary()
 
 #exit()
 
-full_ds = get_dataset(
+train_ds, test_ds = get_datasets(
     batch_size,
     img_size,
     input_img_paths,
     target_img_paths
 )
 
-splitpoint = int(len(full_ds) * 0.8)
-train_ds = full_ds.take(splitpoint)
-valid_ds = full_ds.skip(splitpoint)
+
 
 # Configure the model for training.
 # We use the "sparse" version of categorical_crossentropy
@@ -209,7 +224,7 @@ epochs = 30
 model.fit(
     train_ds,
     epochs=epochs,
-    validation_data=valid_ds,
+    validation_data=test_ds,
     callbacks=callbacks,
 )
 
