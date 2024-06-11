@@ -67,7 +67,7 @@ def check_accuracy(loader, model, device="cuda"):
             preds = (preds > 0.5).float()
             num_correct += (preds == y).sum()
             num_pixels += torch.numel(preds)
-            dice_score += (2 * (pred*y).sum()) / (
+            dice_score += (2 * (preds*y).sum()) / (
                 (preds + y).sum() + 1e-8
             )
             
