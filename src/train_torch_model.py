@@ -4,9 +4,9 @@ from albumentations.pytorch import ToTensorV2
 from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
-from torch_unet import UNET
+from src.torch_unet import UNET
 
-from torch_utils import (
+from src.torch_utils import (
     load_checkpoint,
     save_checkpoint,
     get_loaders,

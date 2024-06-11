@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from torch_dataset import EarthquakeDataset
+from src.torch_dataset import EarthquakeDataset
 from torch.utils.data import DataLoader
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
