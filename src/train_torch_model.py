@@ -21,26 +21,26 @@ DEVICE = "cuda" if torch.cuda.is_available() else exit()
 BATCH_SIZE = 8
 NUM_EPOCHS = 100
 NUM_WORKERS = 2
-IMAGE_HEIGHT = 1024
-IMAGE_WIDTH = 1024
+IMAGE_HEIGHT = 256
+IMAGE_WIDTH = 256
 PIN_MEMORY = True
 LOAD_MODEL = False
-IMG_DIR = "data/post-disaster/images/"
-MASK_DIR = "data/post-disaster/targets/"
+IMG_DIR = "patch_data_256/images/"
+MASK_DIR = "patch_data_256/targets/"
 
 def train_fn(loader, model, optimizer, loss_fn, scaler):
     loop = tqdm(loader) #TODO -- LOOK THIS UP
     
     for batch_idx, (data, targets) in enumerate(loop):
-        data.to(DEVICE)
+        data = data.to(device=DEVICE)
         # important for binary crossentropy to cast as float??
-        targets = targets.float().unsqueeze(1).to(DEVICE)
+        targets = targets.float().unsqueeze(1).to(device=DEVICE)
         
         #forward 
         #TODO -- look up what float16 training is
         with torch.cuda.amp.autocast():
             predictions = model(data)
-            loss = loss_fn(predictions, target)
+            loss = loss_fn(predictions, targets)
             
         #backward
         optimizer.zero_grad()
@@ -83,7 +83,7 @@ def main():
     
     # to generalize to more classes, just up out channels
     # and change to regular CE loss.
-    model = UNET(in_channels=3, out_channels=1).to(DEVICE)
+    model = UNET(in_channels=3, out_channels=1).to(device=DEVICE)
     loss_fn = nn.BCEWithLogitsLoss() # no sigmoid on output
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
