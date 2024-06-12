@@ -21,14 +21,15 @@ from src.torch_utils import (
 LEARNING_RATE = 1e-4
 DEVICE = "cuda" if torch.cuda.is_available() else exit()
 BATCH_SIZE = 16
-NUM_EPOCHS = 100
+NUM_EPOCHS = 15
 NUM_WORKERS = 2
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 PIN_MEMORY = True
-LOAD_MODEL = True
+LOAD_MODEL = False
 IMG_DIR = "patch_data_256/images/"
 MASK_DIR = "patch_data_256/targets/"
+CHECKPOINT_NAME = f"checkpoint.{IMAGE_WIDTH}.tar"
 
 
 def train_fn(loader, model, optimizer, loss_fn, scaler):
@@ -95,7 +96,7 @@ def main():
     )
     
     if LOAD_MODEL:
-        load_checkpoint(torch.load("my_checkpoint.pth.tar"), model)
+        load_checkpoint(torch.load(CHECKPOINT_NAME), model)
         
     check_accuracy(val_loader, model, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
@@ -109,7 +110,7 @@ def main():
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
         }
-        save_checkpoint(checkpoint)
+        save_checkpoint(checkpoint, CHECKPOINT_NAME)
 
         # check accuracy
         check_accuracy(val_loader, model, device=DEVICE)

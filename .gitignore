@@ -10,3 +10,4 @@ patch_data_256/
 dir/
 src/__pycache__
 saved_images/
+model_checkpoints/
