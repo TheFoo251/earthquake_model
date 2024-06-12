@@ -29,7 +29,7 @@ PIN_MEMORY = True
 LOAD_MODEL = False
 IMG_DIR = "patch_data_256/images/"
 MASK_DIR = "patch_data_256/targets/"
-CHECKPOINT_NAME = f"checkpoint.{IMAGE_WIDTH}.tar"
+CHECKPOINT_PATH = f"model_checkpoints/checkpoint.{IMAGE_WIDTH}.tar"
 
 
 def train_fn(loader, model, optimizer, loss_fn, scaler):
@@ -96,7 +96,7 @@ def main():
     )
     
     if LOAD_MODEL:
-        load_checkpoint(torch.load(CHECKPOINT_NAME), model)
+        load_checkpoint(torch.load(CHECKPOINT_PATH), model)
         
     check_accuracy(val_loader, model, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
@@ -110,7 +110,7 @@ def main():
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
         }
-        save_checkpoint(checkpoint, CHECKPOINT_NAME)
+        save_checkpoint(checkpoint, CHECKPOINT_PATH)
 
         # check accuracy
         check_accuracy(val_loader, model, device=DEVICE)
