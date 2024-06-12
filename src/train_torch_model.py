@@ -1,3 +1,5 @@
+ # https://github.com/aladdinpersson/Machine-Learning-Collection/tree/master/ML/Pytorch/image_segmentation/semantic_segmentation_unet
+
 import torch
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -90,8 +92,13 @@ def main():
     train_loader, val_loader = get_loaders(
         IMG_DIR, MASK_DIR, BATCH_SIZE, NUM_WORKERS, PIN_MEMORY, transforms
     )
-
+    
+    if LOAD_MODEL:
+        load_checkpoint(torch.load("my_checkpoing.pth.tar"), model)
+        
+    check_accuracy(val_loader, model, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
+    
     for epoch in range(NUM_EPOCHS):
         train_fn(train_loader, model, optimizer, loss_fn, scaler)
 
