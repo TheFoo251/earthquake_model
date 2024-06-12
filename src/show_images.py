@@ -1,5 +1,4 @@
 from PIL import Image
-import os
 
 IMAGE_PATH = "TEST.png"
 MASK_PATH = "TEST_MASK.png"
