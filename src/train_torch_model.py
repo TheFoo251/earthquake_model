@@ -10,6 +10,7 @@ from src.torch_unet import UNET
 
 from src.torch_utils import (
     save_checkpoint,
+    load_checkpoint,
     get_loaders,
     check_accuracy,
     save_predictions_as_imgs,
@@ -25,7 +26,7 @@ NUM_WORKERS = 2
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 PIN_MEMORY = True
-LOAD_MODEL = False
+LOAD_MODEL = True
 IMG_DIR = "patch_data_256/images/"
 MASK_DIR = "patch_data_256/targets/"
 
@@ -94,12 +95,13 @@ def main():
     )
     
     if LOAD_MODEL:
-        load_checkpoint(torch.load("my_checkpoing.pth.tar"), model)
+        load_checkpoint(torch.load("my_checkpoint.pth.tar"), model)
         
     check_accuracy(val_loader, model, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
     
     for epoch in range(NUM_EPOCHS):
+        print(f"Epoch {epoch}/{NUM_EPOCHS}")
         train_fn(train_loader, model, optimizer, loss_fn, scaler)
 
         # save model
@@ -107,15 +109,15 @@ def main():
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
         }
-        save_checkpoint(val_loader)
+        save_checkpoint(checkpoint)
 
         # check accuracy
         check_accuracy(val_loader, model, device=DEVICE)
 
         # print some examples to a folder
-        save_predictions_as_imgs(
-            val_loader, model, folder="saved_images/", device=DEVICE
-        )
+        #save_predictions_as_imgs(
+        #    val_loader, model, folder="saved_images/", device=DEVICE
+        #)
 
 
 if __name__ == "__main__":
