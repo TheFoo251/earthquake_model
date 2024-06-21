@@ -12,7 +12,10 @@ import glob
 
 
 # Parse arguments into constants
-# Usage: python3 extract_patches.py patch_size input_dir
+
+if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "-h":
+    print("Usage: python3 extract_patches.py patch_size input_dir")
+    exit()
 PATCH_SIZE = int(sys.argv[1])
 INPUT_DIR = sys.argv[2]
 OUTPUT_DIR = f"patch_data_{PATCH_SIZE}"
