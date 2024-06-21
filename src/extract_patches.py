@@ -52,10 +52,10 @@ def extract_patches(image_file_path, mask_file_path):
     mask_image = Image.open(mask_file_path)
 
     # create mask array to use
-    mask_array = np.array(mask_image) >= 2
+    mask_array = np.array(mask_image)
 
     # get coordinates of damaged pixels
-    damaged_pixels = np.argwhere(mask_array == 1)
+    damaged_pixels = np.argwhere(mask_array > 0)
 
     # @TODO -- only work with pixels inside range and skip pixels
     # for now, just try to get pixels that are within the borders- each point is within a border of the image.
@@ -83,7 +83,7 @@ def extract_patches(image_file_path, mask_file_path):
 if __name__ == "__main__":
     # @DEBUG
     # print(PATCH_SIZE)
-    print("WARNING-- this script REMOVES class data, normalizes to 0 or 1")
+    print("This script no longer removes class data")
 
     total_images = len(IMAGES)
     count = 1
