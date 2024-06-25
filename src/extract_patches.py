@@ -34,18 +34,20 @@ MASKS = sorted(glob.glob(f"{INPUT_DIR}/targets/*"))
 # print(MASKS)
 
 
-def split(array):
+
+
+def split_tensor(x, grid_length=4):
     """
-    Split a matrix into sub-matrices.
-    # https://stackoverflow.com/questions/11105375/how-to-split-a-matrix-into-4-blocks-using-numpy
-    
+    https://discuss.pytorch.org/t/split-an-image-into-a-2-by-2-grid/189895
+    split images
     """
-    
-    nrows, ncols = INPUT_SIZE // PATCH_SIZE, INPUT_SIZE // PATCH_SIZE
-    r, h = array.shape
-    return (array.reshape(h//nrows, nrows, -1, ncols)
-                 .swapaxes(1, 2)
-                 .reshape(-1, nrows, ncols))
+    sz = x.shape[1] // grid_length
+    row_length, col_length = (sz, sz)
+    return (x
+               .unfold(1,row_length,col_length)
+               .unfold(2,row_length,col_length)
+               .reshape(3,grid_length**2,row_length,col_length)
+               .permute(1,0,2,3))
 
 
 
@@ -66,18 +68,18 @@ def extract_patches(image_file_path, mask_file_path):
     rgb_array = np.asarray(rgb_image)
     mask_array = np.asarray(mask_image)
     
-    rgb_sliced = split(rgb_array)
-    mask_sliced = split(mask_array)
+    rgb_sliced = split_tensor(rgb_array)
+    mask_sliced = split_tensor(mask_array)
     
-    for i, rgb_arr, mask_arr in enumerate(zip(rgb_sliced, mask_sliced)):
+    for i, rgb_patch_arr, mask_patch_arr in enumerate(zip(rgb_sliced, mask_sliced)):
         
         # rgb
-        rgb_im = Image.fromarray(rgb_arr)
+        rgb_im = Image.fromarray(rgb_patch_arr)
         filename = f"{rgb_name}--patch{i:05d}.png"
         rgb_im.save(os.path.join(OUTPUT_DIR, "images", filename))
 
         # mask
-        mask_im = Image.fromarray(mask_arr)
+        mask_im = Image.fromarray(mask_patch_arr)
         filename = f"{mask_name}--patch{i:05d}.png".replace("_target", "")
         mask_im.save(os.path.join(OUTPUT_DIR, "targets", filename))
 
