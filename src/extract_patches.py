@@ -4,12 +4,10 @@ Script to extract damaged patches from a given image using a mask,
 
 from PIL import Image
 import os
-import numpy as np
 import sys
 import glob
-
-# @TODO -- get interation over files working
-
+import numpy as np
+from patchify import patchify
 
 # Parse arguments into constants
 
@@ -17,11 +15,11 @@ if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "-h":
     print("Usage: python3 extract_patches.py patch_size input_dir")
     exit()
     
-PATCH_SIZE = int(sys.argv[1])
-INPUT_SIZE = 1024
+PATCH_SZ = int(sys.argv[1])
+INPUT_SZ = 1024
 
 INPUT_DIR = sys.argv[2]
-OUTPUT_DIR = f"patch_data_{PATCH_SIZE}"
+OUTPUT_DIR = f"patch_data_{PATCH_SZ}"
 
 os.makedirs(f"{OUTPUT_DIR}/images")
 os.makedirs(f"{OUTPUT_DIR}/targets")
@@ -30,25 +28,16 @@ os.makedirs(f"{OUTPUT_DIR}/targets")
 IMAGES = sorted(glob.glob(f"{INPUT_DIR}/images/*"))
 MASKS = sorted(glob.glob(f"{INPUT_DIR}/targets/*"))
 
-# print(IMAGES)
-# print(MASKS)
 
+def open_image(fname):
+    img = Image.open(fname)
+    return np.array(img)
 
-
-
-def split_tensor(x, grid_length=4):
+def split_array(x):
     """
-    https://discuss.pytorch.org/t/split-an-image-into-a-2-by-2-grid/189895
-    split images
+    split array into sub-arrays
     """
-    sz = x.shape[1] // grid_length
-    row_length, col_length = (sz, sz)
-    return (x
-               .unfold(1,row_length,col_length)
-               .unfold(2,row_length,col_length)
-               .reshape(3,grid_length**2,row_length,col_length)
-               .permute(1,0,2,3))
-
+    return patchify(x, (PATCH_SZ, PATCH_SZ), step=PATCH_SZ)
 
 
 def extract_patches(image_file_path, mask_file_path):
@@ -62,24 +51,22 @@ def extract_patches(image_file_path, mask_file_path):
 
     # print("opening images...")
     # open up the images for later
-    rgb_image = Image.open(image_file_path)
-    mask_image = Image.open(mask_file_path)
     
-    rgb_array = np.asarray(rgb_image)
-    mask_array = np.asarray(mask_image)
+    rgb_ten = open_image(image_file_path)
+    mask_ten = open_image(mask_file_path)
     
-    rgb_sliced = split_tensor(rgb_array)
-    mask_sliced = split_tensor(mask_array)
+    rgb_sliced = split_tensor(rgb_ten)
+    mask_sliced = split_tensor(mask_ten)
     
-    for i, rgb_patch_arr, mask_patch_arr in enumerate(zip(rgb_sliced, mask_sliced)):
+    for i, (rgb_patch_ten, mask_patch_ten) in enumerate(zip(rgb_sliced, mask_sliced)):
         
         # rgb
-        rgb_im = Image.fromarray(rgb_patch_arr)
+        rgb_im = Image.fromarray(rgb_patch_ten)
         filename = f"{rgb_name}--patch{i:05d}.png"
         rgb_im.save(os.path.join(OUTPUT_DIR, "images", filename))
 
         # mask
-        mask_im = Image.fromarray(mask_patch_arr)
+        mask_im = Image.fromarray(mask_patch_ten)
         filename = f"{mask_name}--patch{i:05d}.png".replace("_target", "")
         mask_im.save(os.path.join(OUTPUT_DIR, "targets", filename))
 
