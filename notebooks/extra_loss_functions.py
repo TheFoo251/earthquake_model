@@ -71,7 +71,7 @@ class ComboLoss:
         self.dice_loss =  DiceLoss(axis, smooth, reduction=reduction)
         
     def __call__(self, pred, targ):
-        return alpha * self.ce_loss(pred, targ) + (1-alpha)*self.dice_loss(pred, targ)
+        return self.alpha * self.ce_loss(pred, targ) + (1-self.alpha)*self.dice_loss(pred, targ)
     
     def decodes(self, x):    return x.argmax(dim=self.axis)
     def activation(self, x): return F.softmax(x, dim=self.axis)
@@ -83,7 +83,7 @@ class FocalDiceLoss: # example class building on dice loss
     """
     def __init__(self, axis=1, smooth=1., alpha=1., reduction="sum"):
         store_attr()
-        self.focal_loss = FocalLossFlat(axis=axis)
+        self.focal_loss = FocalLossFlat(axis=self.axis)
         self.dice_loss =  DiceLoss(axis, smooth, reduction=reduction)
         
     def __call__(self, pred, targ):
