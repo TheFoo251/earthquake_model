@@ -147,6 +147,10 @@ class MyModel(L.LightningModule):
         # for image segmentation dice loss could be the best first choice
         self.loss_fn = smp.losses.DiceLoss(smp.losses.MULTICLASS_MODE, from_logits=True)
 
+    def forward(self, image):
+        mask = self.model(image)
+        return mask
+
     def training_step(self, batch, batch_idx):
         # training_step defines the train loop.
         # it is independent of forward

@@ -11,7 +11,7 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 from pathlib import Path
-import torchvision.transforms as T
+import torchvision.transforms.v2 as T
 import torch.nn.functional as F
 
 
@@ -29,10 +29,11 @@ class EarthquakeDataset(Dataset):
     def __getitem__(self, index):  # TODO -- make the transform system better
         img_path = os.path.join(self.image_dir, self.images[index])
         mask_path = os.path.join(self.mask_dir, self.masks[index])
-        image = T.ToTensor()(Image.open(img_path).convert("RGB"))
+        # requires PILToTensor rather than ToTensor, or masks get scaled to be between 0 and 1
+        image = T.PILToTensor()(Image.open(img_path).convert("RGB"))
         mask = (
             F.one_hot(
-                T.ToTensor()(Image.open(mask_path).convert("L"))
+                T.PILToTensor()(Image.open(mask_path).convert("L"))
                 .permute(1, 2, 0)
                 .squeeze()
                 .long(),
@@ -40,7 +41,8 @@ class EarthquakeDataset(Dataset):
             )
             .float()
             .permute(2, 0, 1)
-        )  # needs .long to fix one-hot issue
+        )
+        # needs .long to fix one-hot issue
 
         if self.transform is not None:
             augmentations = self.transform(image=image, mask=mask)
@@ -81,6 +83,21 @@ def get_loaders(patch_sz, batch_size, num_workers=4, pin_memory=True, transforms
     return train_loader, val_loader
 
 
+def show_image_and_mask(image, mask):
+    """
+    Given an image and mask, plot both.
+    """
+    plt.subplot(1, 2, 1)
+    plt.imshow(
+        image.permute(1, 2, 0)
+    )  # for visualization we have to transpose back to HWC
+    plt.subplot(1, 2, 2)
+    plt.imshow(
+        mask.permute(1, 2, 0).argmax(-1).squeeze()
+    )  # need argmax for viewing # SOMETHING HERE IS WRONG!!
+    plt.show()
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
@@ -90,12 +107,6 @@ if __name__ == "__main__":
     print(sample[0].shape)
     print(sample[1].shape)
 
-    plt.subplot(1, 2, 1)
-    plt.imshow(
-        sample[0].permute(1, 2, 0)
-    )  # for visualization we have to transpose back to HWC
-    plt.subplot(1, 2, 2)
-    plt.imshow(
-        sample[1].permute(1, 2, 0).argmax(-1)
-    )  # need argmax for viewing # SOMETHING HERE IS WRONG!!
-    plt.show()
+    print(sample[1].permute(1, 2, 0).argmax(-1).squeeze().shape)
+
+    show_image_and_mask(sample[0], sample[1])
