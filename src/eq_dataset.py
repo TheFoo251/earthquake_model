@@ -30,7 +30,7 @@ class EarthquakeDataset(Dataset):
         img_path = os.path.join(self.image_dir, self.images[index])
         mask_path = os.path.join(self.mask_dir, self.masks[index])
         # requires PILToTensor rather than ToTensor, or masks get scaled to be between 0 and 1
-        image = T.PILToTensor()(Image.open(img_path).convert("RGB"))
+        image = T.PILToTensor()(Image.open(img_path).convert("RGB")).float()
         mask = (
             F.one_hot(
                 T.PILToTensor()(Image.open(mask_path).convert("L"))

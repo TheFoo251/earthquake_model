@@ -207,15 +207,15 @@ if __name__ == "__main__":
 
         plt.subplot(1, 3, 2)
         plt.imshow(
-            gt_mask.numpy().squeeze()
-        )  # just squeeze classes dim, because we have only one class
+            gt_mask.numpy().argmax(0)
+        )  
         plt.title("Ground truth")
         plt.axis("off")
 
         plt.subplot(1, 3, 3)
         plt.imshow(
-            pr_mask.numpy().squeeze()
-        )  # just squeeze classes dim, because we have only one class
+            pr_mask.numpy().argmax(0)
+        )  
         plt.title("Prediction")
         plt.axis("off")
 
