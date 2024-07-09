@@ -30,18 +30,9 @@ class EarthquakeDataset(Dataset):
         img_path = os.path.join(self.image_dir, self.images[index])
         mask_path = os.path.join(self.mask_dir, self.masks[index])
         # requires PILToTensor rather than ToTensor, or masks get scaled to be between 0 and 1
+        # this also does the required format permutation for us
         image = T.PILToTensor()(Image.open(img_path).convert("RGB")).float()
-        mask = (
-            F.one_hot(
-                T.PILToTensor()(Image.open(mask_path).convert("L"))
-                .permute(1, 2, 0)
-                .squeeze()
-                .long(),
-                num_classes=5,
-            )
-            .float()
-            .permute(2, 0, 1)
-        )
+        mask = T.PILToTensor()(Image.open(mask_path).convert("L"))
         # needs .long to fix one-hot issue
 
         if self.transform is not None:
@@ -93,7 +84,7 @@ def show_image_and_mask(image, mask):
     )  # for visualization we have to transpose back to HWC
     plt.subplot(1, 2, 2)
     plt.imshow(
-        mask.permute(1, 2, 0).argmax(-1).squeeze()
+        mask.permute(1, 2, 0)
     )  # need argmax for viewing # SOMETHING HERE IS WRONG!!
     plt.show()
 
@@ -107,6 +98,6 @@ if __name__ == "__main__":
     print(sample[0].shape)
     print(sample[1].shape)
 
-    print(sample[1].permute(1, 2, 0).argmax(-1).squeeze().shape)
+    print(sample[1].permute(1, 2, 0).shape)
 
     show_image_and_mask(sample[0], sample[1])

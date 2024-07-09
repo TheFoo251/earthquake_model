@@ -59,15 +59,16 @@ class MyModel(L.LightningModule):
         # it is independent of forward
         x, y = batch
         y_hat = self.model(x)
-        loss = self.loss_fn(y, y_hat)
+        loss = self.loss_fn(y_hat, y)
         return loss
 
     def validation_step(self, batch, batch_idx):
         # this is the validation loop
         x, y = batch
         y_hat = self.model(x)
-        val_loss = self.loss_fn(y_hat, y)
+        val_loss = self.loss_fn(y, y_hat)
         self.log("val_loss", val_loss)
+        return val_loss
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
