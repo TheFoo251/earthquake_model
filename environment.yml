@@ -1,4 +1,4 @@
-name: fastai
+name: earthquake_testbed
 channels:
   - pytorch
   - fastai
@@ -9,7 +9,7 @@ dependencies:
   - pip
   - pytorch
   - torchvision
-  - torchaudio 
+  - torchaudio
   - pytorch-cuda=12.1
   - fastai
   - monai
@@ -17,6 +17,8 @@ dependencies:
   - optuna-integration
   - seaborn
   - jupyter
+  - lightning
   - pip:
-    # pip-only packages
-    - patchify
+      # pip-only packages
+      - patchify
+      - segmentation-models-pytorch

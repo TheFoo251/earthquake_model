@@ -1,3 +1,7 @@
+"""
+This file contains the definitions of extra loss functions not implemented in fastai.
+"""
+
 import torch
 from fastai.data.all import *
 from fastai.vision.all import *
