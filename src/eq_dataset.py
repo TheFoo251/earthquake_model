@@ -32,7 +32,9 @@ class EarthquakeDataset(Dataset):
         # requires PILToTensor rather than ToTensor, or masks get scaled to be between 0 and 1
         # this also does the required format permutation for us
         image = T.PILToTensor()(Image.open(img_path).convert("RGB")).float()
-        mask = T.PILToTensor()(Image.open(mask_path).convert("L"))
+        mask = T.PILToTensor()(
+            Image.open(mask_path).convert("L")
+        ).long()  # must be a long so it can be one-hotted later
         # needs .long to fix one-hot issue
 
         if self.transform is not None:
@@ -98,6 +100,6 @@ if __name__ == "__main__":
     print(sample[0].shape)
     print(sample[1].shape)
 
-    print(sample[1].permute(1, 2, 0).shape)
+    print(sample[1])
 
-    show_image_and_mask(sample[0], sample[1])
+    # show_image_and_mask(sample[0], sample[1])

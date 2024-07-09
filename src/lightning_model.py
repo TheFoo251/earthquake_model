@@ -59,14 +59,14 @@ class MyModel(L.LightningModule):
         # it is independent of forward
         x, y = batch
         y_hat = self.model(x)
-        loss = self.loss_fn(y_hat, y)
+        loss = self.loss_fn(y_hat, y)  # y_pred, y_true
         return loss
 
     def validation_step(self, batch, batch_idx):
         # this is the validation loop
         x, y = batch
         y_hat = self.model(x)
-        val_loss = self.loss_fn(y, y_hat)
+        val_loss = self.loss_fn(y_hat, y)  # y_pred, y_true
         self.log("val_loss", val_loss)
         return val_loss
 
@@ -120,3 +120,6 @@ if __name__ == "__main__":
         plt.axis("off")
 
         plt.show()
+
+# something is way off. ground truth never looks anything like the preds this time around.
+# this is mostly a loss problem, everything worked fine-ish with mse.
