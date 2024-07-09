@@ -20,8 +20,8 @@ class EarthquakeDataset(Dataset):
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.transform = transform
-        self.images = os.listdir(image_dir)
-        self.masks = os.listdir(mask_dir)
+        self.images = sorted(os.listdir(image_dir))  # NEVER FORGET TO SORT!
+        self.masks = sorted(os.listdir(mask_dir))
 
     def __len__(self):
         return len(self.images)
@@ -29,16 +29,18 @@ class EarthquakeDataset(Dataset):
     def __getitem__(self, index):  # TODO -- make the transform system better
         img_path = os.path.join(self.image_dir, self.images[index])
         mask_path = os.path.join(self.mask_dir, self.masks[index])
-        image = T.ToTensor()(Image.open(img_path).convert("RGB")).permute(1, 2, 0)
-        mask = F.one_hot(
-            T.ToTensor()(Image.open(mask_path).convert("L"))
-            .permute(1, 2, 0)
-            .squeeze()
-            .long(),
-            num_classes=5,
+        image = T.ToTensor()(Image.open(img_path).convert("RGB"))
+        mask = (
+            F.one_hot(
+                T.ToTensor()(Image.open(mask_path).convert("L"))
+                .permute(1, 2, 0)
+                .squeeze()
+                .long(),
+                num_classes=5,
+            )
+            .float()
+            .permute(2, 0, 1)
         )  # needs .long to fix one-hot issue
-        # don't need this part - my masks are in the correct format already
-        # mask[mask == 255.0 = 1.0]
 
         if self.transform is not None:
             augmentations = self.transform(image=image, mask=mask)
@@ -89,9 +91,11 @@ if __name__ == "__main__":
     print(sample[1].shape)
 
     plt.subplot(1, 2, 1)
-    plt.imshow(sample[0])  # for visualization we have to transpose back to HWC
+    plt.imshow(
+        sample[0].permute(1, 2, 0)
+    )  # for visualization we have to transpose back to HWC
     plt.subplot(1, 2, 2)
     plt.imshow(
-        sample[1].argmax(-1)
+        sample[1].permute(1, 2, 0).argmax(-1)
     )  # need argmax for viewing # SOMETHING HERE IS WRONG!!
     plt.show()

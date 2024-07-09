@@ -155,8 +155,12 @@ class MyModel(L.LightningModule):
         loss = F.mse_loss(y, y_hat)
         return loss
 
-    def validation_step(self):
-        pass  # FIX THIS
+    def validation_step(self, batch, batch_idx):
+        # this is the validation loop
+        x, y = batch
+        y_hat = self.model(x)
+        val_loss = F.mse_loss(y_hat, y)
+        self.log("val_loss", val_loss)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
