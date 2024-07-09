@@ -190,7 +190,7 @@ if __name__ == "__main__":
     batch = next(iter(val_loader))
     with torch.no_grad():
         model.eval()
-        logits = model(batch["0"])
+        logits = model(batch[0])
     pr_masks = logits.sigmoid()
 
     for image, gt_mask, pr_mask in zip(batch[0], batch[1], pr_masks):
