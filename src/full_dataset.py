@@ -3,6 +3,8 @@ from PIL import Image
 from torch.utils.data import Dataset
 import numpy as np
 from pathlib import Path
+import torchvision.transforms.v2.functional as TF
+import torch
 
 
 # the class is responsible for knowing where the data is stored
@@ -28,21 +30,19 @@ class SiameseDataset(Dataset):
         return len(self.post_images)
 
     def __getitem__(self, index):
-        pre_image = np.array(Image.open(self.pre_images[index]).convert("RGB"))
-        pre_mask = np.array(
-            Image.open(self.pre_masks[index]).convert("L"), dtype=np.float32
+        pre_image = TF.pil_to_tensor(Image.open(self.pre_images[index]).convert("RGB"))
+        pre_mask = TF.pil_to_tensor(Image.open(self.pre_masks[index]).convert("L"))
+        post_image = TF.pil_to_tensor(
+            Image.open(self.post_images[index]).convert("RGB")
         )
-        post_image = np.array(Image.open(self.post_images[index]).convert("RGB"))
-        post_mask = np.array(
-            Image.open(self.post_masks[index]).convert("L"), dtype=np.float32
-        )
+        post_mask = TF.pil_to_tensor(Image.open(self.post_masks[index]).convert("L"))
 
         # if self.transform is not None:
         #     augmentations = self.transform(image=image, mask=mask)
         #     image = augmentations["image"]
         #     mask = augmentations["mask"]
 
-        damaged = np.max(post_mask) > 1
+        damaged = torch.max(post_mask) > 1
 
         return pre_image, pre_mask, post_image, post_mask, damaged
 
