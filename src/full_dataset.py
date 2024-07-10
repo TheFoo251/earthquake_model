@@ -49,7 +49,7 @@ class SiameseDataset(Dataset):
         # don't be too clever for your own good. This works fine.
         label = (
             torch.max(post_mask) > 1
-        )  # best practice is to have it be the label number
+        ).int()  # best practice is to have it be the label number
 
         return pre_image, pre_mask, post_image, post_mask, label
 
@@ -63,4 +63,6 @@ if __name__ == "__main__":
 
     ex = ds[0]
     labels = ["No Damage", "Damaged"]
+    print(ex[4])
+    print(ds[0][:])
     imshow(list(ex[0:4]), title=labels[ex[4].item()])
