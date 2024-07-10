@@ -47,9 +47,12 @@ class SiameseDataset(Dataset):
         # what should be transforms, and what should be part of the Dataset?
 
         # don't be too clever for your own good. This works fine.
-        damaged = (torch.max(post_mask) > 1).int()
+        if torch.max(post_mask) > 1:
+            label = torch.tensor([0, 1]).float()
+        else:
+            label = torch.tensor([1, 0]).float()
 
-        return pre_image, pre_mask, post_image, post_mask, damaged
+        return pre_image, pre_mask, post_image, post_mask, label
 
 
 if __name__ == "__main__":
@@ -61,4 +64,4 @@ if __name__ == "__main__":
 
     ex = ds[0]
     labels = ["No Damage", "Damaged"]
-    imshow(list(ex[0:4]), title=labels[ex[4]])
+    imshow(list(ex[0:4]), title=labels[torch.argmax(ex[4])])
