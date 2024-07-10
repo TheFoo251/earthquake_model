@@ -32,7 +32,7 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
     for batch_idx, (_, _, data, _, targets) in enumerate(loop):
         data = data.to(device=DEVICE)
         # important for binary crossentropy to cast as float??
-        targets = targets.float().unsqueeze(1).to(device=DEVICE)
+        targets = targets.float().to(device=DEVICE) # whoops
 
         # forward
         # has to do with fp16 training
