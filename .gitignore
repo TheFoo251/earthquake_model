@@ -14,3 +14,4 @@ model_checkpoints/
 old_patch_data_256/
 src/lightning_logs/
 lightning_logs/
+old_code/__pycache__

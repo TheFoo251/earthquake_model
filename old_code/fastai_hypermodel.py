@@ -13,7 +13,7 @@ from optuna.integration import FastAIPruningCallback
 import optuna.visualization.matplotlib as vs
 
 # import monai.losses as mdlss #(med loss)
-from extra_loss_functions import *
+from old_code.extra_loss_functions import *
 import logging
 import sys
 
