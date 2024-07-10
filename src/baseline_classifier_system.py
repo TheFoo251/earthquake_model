@@ -60,7 +60,7 @@ model_ft.fc = nn.Linear(num_ftrs, 2)
 
 model_ft = model_ft.to(device)
 
-loss_fn = nn.BCEWithLogitsLoss()
+loss_fn = nn.CrossEntropyLoss()
 
 # Observe that all parameters are being optimized
 optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
