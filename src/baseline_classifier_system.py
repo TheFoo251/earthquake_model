@@ -14,12 +14,11 @@ from tempfile import TemporaryDirectory
 
 cudnn.benchmark = True
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 from torch_utils import get_loaders
 
-train_loader, val_loader = get_loaders(256, 16)
-
-
-
+dataloaders = get_loaders(256, 16)
 
 
 # loop copied from https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
@@ -48,7 +47,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 running_corrects = 0
 
                 # Iterate over data.
-                for inputs, labels in dataloaders[phase]:
+                for _, _, inputs, _, labels in dataloaders[phase]:
                     inputs = inputs.to(device)
                     labels = labels.to(device)
 

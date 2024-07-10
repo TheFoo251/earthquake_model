@@ -50,7 +50,7 @@ def get_loaders(
         shuffle=False,
     )
 
-    return train_loader, val_loader
+    return {"train": train_loader, "val": val_loader}
 
 
 def check_accuracy(loader, model, device="cuda"):
