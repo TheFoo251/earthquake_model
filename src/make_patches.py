@@ -65,8 +65,8 @@ def save_patches(patches, output_dir):
     """
     total = len(patches)  # TODO-- proper progress bar with tqdm
     for i, (img, msk) in enumerate(patches):  # TODO -- give proper number padding
-        Image.fromarray(img).save(output_dir / "images" / f"{i}.png")
-        Image.fromarray(msk).save(output_dir / "targets" / f"{i}.png")
+        Image.fromarray(img).save(output_dir / "images" / f"{i:08d}.png")
+        Image.fromarray(msk).save(output_dir / "targets" / f"{i:08d}.png")
         print(f"Saved tuple {i}/{total}", end="\r", flush=True)
     print(end="\r", flush=True)
     print()
@@ -76,13 +76,13 @@ def mk_patches(patch_size):
 
     for before_or_after in ["pre", "post"]:
 
-        base_path = Path("../data/")
+        base_path = Path("data/")
         data_dir = base_path / "full" / f"{before_or_after}-disaster"
         patch_dir = base_path / f"{patch_size}_patches/{before_or_after}-disaster"
 
         if not patch_dir.is_dir():
             # make necessary directories
-            patch_dir.mkdir()
+            patch_dir.mkdir(parents=True)
             (patch_dir / "images").mkdir()
             (patch_dir / "targets").mkdir()
 
