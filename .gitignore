@@ -1,17 +1,11 @@
 #just the data folder(s)
-full_data/
-patch_data/
-extraction_test/
-256_data/
+#paths are only checked if you use /
 data/
-data-archive/
-models/
-patch_data_256/
-dir/
-src/__pycache__
-saved_images/
-model_checkpoints/
-old_patch_data_256/
-src/lightning_logs/
-lightning_logs/
-old_code/__pycache__
+models
+model_checkpoints
+__pycache__
+model_checkpoints
+lightning_logs
+__pycache__
+.ipynb_checkpoints
+.ruff_cache
