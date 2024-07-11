@@ -144,7 +144,6 @@ def check_recall(loader, model):  # What I'm most interested in....
         for _, _, data, _, targets in loader:
             data, targets = data.to(DEVICE), targets.to(DEVICE)
             preds = model(data)
-            print(targets)
             running_recall += FM.binary_recall(
                 preds[..., -1:].squeeze(-1), targets
             ).item()
