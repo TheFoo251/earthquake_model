@@ -16,7 +16,7 @@ import optuna
 import torcheval.metrics.functional as FM
 import torch.nn.functional as F
 from torchvision.models.convnext import LayerNorm2d
-
+import math
 
 # other files
 from torch_utils import get_loaders
@@ -185,33 +185,28 @@ def objective(trial):
         nn.BatchNorm1d(2048),
         nn.ReLU(),
         nn.Linear(2048, n_outputs),
-        nn.LogSoftmax(dim=1),
     )
     model.classifier = sequential_layers
 
     model = model.to(DEVICE)
 
     loss_fn = FocalLoss()
-    optimizer_ft = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.AdamW(model.parameters(), lr=lr)
 
     # Decay LR by a factor of 0.1 every 7 epochs
-    scheduler = lr_scheduler.OneCycleLR(
-        optimizer_ft,
-        epochs=NUM_EPOCHS,
-        steps_per_epoch=len(dataloaders["train"]),
-        max_lr=1e-2,
+    scheduler = lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=math.floor(len(dataloaders["train"]) / BATCH_SZ)
     )
 
     scaler = torch.cuda.amp.GradScaler()
 
-    
     # train it!
     for epoch in range(NUM_EPOCHS):
         print(f"Epoch {epoch+1}/{NUM_EPOCHS}")
         train_one_epoch(
             dataloaders["train"],
             model,
-            optimizer_ft,
+            optimizer,
             loss_fn,
             scaler,
             scheduler=scheduler,
