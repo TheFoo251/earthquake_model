@@ -271,5 +271,14 @@ def objective(trial):
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(directions=["maximize", "maximize"])
+
+    optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
+    study_name = "convnext-classifier-study"  # Unique identifier of the study.
+    storage_name = "sqlite:///{}.db".format(study_name)
+    study = optuna.create_study(
+        study_name=study_name,
+        storage=storage_name,
+        directions=["maximize", "maximize"],
+        load_if_exists=True,
+    )
     study.optimize(objective, n_trials=NUM_TRIALS)
