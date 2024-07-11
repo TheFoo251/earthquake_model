@@ -57,13 +57,15 @@ class SiameseDataset(Dataset):
 
 if __name__ == "__main__":
     ds = SiameseDataset(patch_sz=256)
-    # damaged_data = [x for x in ds if x[4] == True]
-    # print("number of damaged instances: ", len(damaged_data))
+    damaged_data = [x for x in ds if x[4] == 1]
+    undamaged_data = [x for x in ds if x[4] == 0]
+    print("number of damaged instances: ", len(damaged_data))
+    print("number of undamaged instances: ", len(undamaged_data))
 
     from torch_utils import imshow
 
     ex = ds[0]
     labels = ["No Damage", "Damaged"]
     print(ex[4])
-    print(ds[0][:])
+    # print(ds[0][:])
     imshow(list(ex[0:4]), title=labels[ex[4].item()])

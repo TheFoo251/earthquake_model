@@ -66,6 +66,7 @@ def val_one_epoch():
     pass
 
 
+# --- METRICS ---
 def check_accuracy(loader, model):
     correct = 0
     model.eval()
@@ -87,7 +88,9 @@ def check_f1_score(loader, model):
         for _, _, data, _, targets in loader:
             data, targets = data.to(DEVICE), targets.to(DEVICE)
             preds = model(data)
-            running_f1_score += FM.multiclass_f1_score(preds, targets, num_classes=2)
+            running_f1_score += FM.multiclass_f1_score(
+                preds, targets, num_classes=2
+            ).item()
         avg_f1_score = running_f1_score / len(loader)
 
     model.train()
@@ -101,15 +104,33 @@ def check_recall(loader, model):  # What I'm most interested in....
         for _, _, data, _, targets in loader:
             data, targets = data.to(DEVICE), targets.to(DEVICE)
             preds = model(data)
-            running_f1_score += FM.multiclass_recall(preds, targets, num_classes=2)
+            running_f1_score += FM.multiclass_recall(
+                preds, targets, num_classes=2
+            ).item()
         avg_f1_score = running_f1_score / len(loader)
 
     model.train()
     return avg_f1_score
 
 
-def check_recall_manually():
-    pass
+def check_recall_manually(loader, model):
+    running_target_p = 0
+    running_true_p = 0
+    model.eval()
+    with torch.no_grad():
+        for _, _, data, _, targets in loader:
+            data, targets = data.to(DEVICE), targets.to(DEVICE)
+            preds = model(data)
+            running_true_p += torch.sum(
+                (targets == torch.argmax(preds, dim=1)) * targets
+            ).item()
+            running_target_p += torch.sum(targets).item()
+
+        print(
+            f"\nTrue positive predictions / total ground positives: {running_true_p}/{running_target_p}\n"
+        )
+
+    model.train()
 
 
 def objective(trial):
@@ -153,6 +174,7 @@ def objective(trial):
             scheduler=exp_lr_scheduler,
         )
 
+    check_recall_manually(model=model_ft, loader=dataloaders["val"])
     recall = check_recall(model=model_ft, loader=dataloaders["val"])
 
     return recall
