@@ -83,11 +83,24 @@ def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):
         scheduler.step()  # has to be after the optimizer step
 
         # update tqdm loop
-        loop.set_postfix(loss=running_loss)
+        loop.set_postfix(loss=running_loss / (batch_idx + 1))
 
 
-def val_one_epoch():
-    pass
+def val_one_epoch(loader, model, loss_fn):
+    loop = tqdm(loader)  # progress bar wrapped over dataloader
+    model.eval()
+
+    running_loss = 0.0
+
+    with torch.no_grad():
+        for batch_idx, (_, _, data, _, targets) in enumerate(loop):
+            data, targets = data.to(device=DEVICE), targets.to(device=DEVICE)
+            predictions = model(data)
+            loss = loss_fn(predictions, targets)
+            running_loss += loss.item()
+
+            # update tqdm loop
+            loop.set_postfix(val_loss=running_loss / (batch_idx + 1))
 
 
 # --- METRICS ---
@@ -158,6 +171,7 @@ def check_recall_manually(loader, model):
 def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
+    gamma = trial.suggest_int("gamma", 1, 10)
 
     # get data
     dataloaders = get_loaders(PATCH_SZ, BATCH_SZ)
@@ -190,7 +204,7 @@ def objective(trial):
 
     model = model.to(DEVICE)
 
-    loss_fn = FocalLoss()
+    loss_fn = FocalLoss(gamma=gamma)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
 
     # Decay LR by a factor of 0.1 every 7 epochs
@@ -211,6 +225,7 @@ def objective(trial):
             scaler,
             scheduler=scheduler,
         )
+        val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
 
     recall = check_recall_manually(model=model, loader=dataloaders["val"])
     # recall = check_recall(model=model_ft, loader=dataloaders["val"])
