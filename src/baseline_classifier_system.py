@@ -164,7 +164,7 @@ def objective(trial):
     gamma = trial.suggest_float("gamma", 0.0, 1.0)
 
     # here's where the transfer magic happens...
-    model_ft = models.resnet18(weights="IMAGENET1K_V1")
+    model_ft = models.resnet50(weights="IMAGENET1K_V2")
     num_ftrs = model_ft.fc.in_features
     model_ft.fc = nn.Linear(num_ftrs, 2)  # 2 classes
 
@@ -178,8 +178,11 @@ def objective(trial):
     optimizer_ft = optim.Adam(model_ft.parameters(), lr=lr)
 
     # Decay LR by a factor of 0.1 every 7 epochs
-    exp_lr_scheduler = lr_scheduler.StepLR(
-        optimizer_ft, step_size=step_size, gamma=gamma
+    scheduler = lr_scheduler.OneCycleLR(
+        optimizer_ft,
+        epochs=NUM_EPOCHS,
+        steps_per_epoch=len(dataloaders["train"]),
+        max_lr=1e-2,
     )
 
     scaler = torch.cuda.amp.GradScaler()
@@ -193,7 +196,7 @@ def objective(trial):
             optimizer_ft,
             loss_fn,
             scaler,
-            scheduler=exp_lr_scheduler,
+            scheduler=scheduler,
         )
 
     recall = check_recall_manually(model=model_ft, loader=dataloaders["val"])
