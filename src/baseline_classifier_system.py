@@ -15,6 +15,7 @@ from tqdm import tqdm
 import optuna
 import torcheval.metrics.functional as FM
 import torch.nn.functional as F
+from torchvision.models.convnext import LayerNorm2d
 
 
 # other files
@@ -22,16 +23,13 @@ from torch_utils import get_loaders
 
 cudnn.benchmark = True
 
-NUM_EPOCHS = 3
+NUM_EPOCHS = 10
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 PATCH_SZ, BATCH_SZ = 256, 16
 
 NUM_TRIALS = 2
 
-# get data
-dataloaders = get_loaders(PATCH_SZ, BATCH_SZ)
-dataset_sizes = {x: len(dataloaders[x]) for x in ["train", "val"]}
 
 # losses
 
@@ -93,6 +91,7 @@ def val_one_epoch():
 
 
 # --- METRICS ---
+
 # def check_accuracy(loader, model):
 #     correct = 0
 #     model.eval()
@@ -159,23 +158,41 @@ def check_recall_manually(loader, model):
 def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
-    # mom = trial.suggest_float("momentum", 0.0, 1.0) # not necessary for adam
-    step_size = trial.suggest_int("step_size", 1, 10)
-    gamma = trial.suggest_float("gamma", 0.0, 1.0)
+
+    # get data
+    dataloaders = get_loaders(PATCH_SZ, BATCH_SZ)
 
     # here's where the transfer magic happens...
-    model_ft = models.resnet50(weights="IMAGENET1K_V2")
-    num_ftrs = model_ft.fc.in_features
-    model_ft.fc = nn.Linear(num_ftrs, 2)  # 2 classes
+    model = models.convnext_base(weights=models.ConvNeXt_Base_Weights.DEFAULT)
 
-    model_ft = model_ft.to(DEVICE)
+    # this section copied from https://medium.com/exemplifyml-ai/image-classification-with-resnet-convnext-using-pytorch-f051d0d7e098
+    n_inputs = None
+    for name, child in model.named_children():
+        if name == "classifier":
+            for sub_name, sub_child in child.named_children():
+                if sub_name == "2":
+                    n_inputs = sub_child.in_features
+    n_outputs = 2
 
-    # loss_fn = nn.CrossEntropyLoss() # get a better loss function to deal with class imbalance...
+    sequential_layers = nn.Sequential(
+        LayerNorm2d((1024,), eps=1e-06, elementwise_affine=True),
+        nn.Flatten(start_dim=1, end_dim=-1),
+        nn.Linear(n_inputs, 2048, bias=True),
+        nn.BatchNorm1d(2048),
+        nn.ReLU(),
+        nn.Dropout(0.1),
+        nn.Linear(2048, 2048),
+        nn.BatchNorm1d(2048),
+        nn.ReLU(),
+        nn.Linear(2048, n_outputs),
+        nn.LogSoftmax(dim=1),
+    )
+    model.classifier = sequential_layers
+
+    model = model.to(DEVICE)
+
     loss_fn = FocalLoss()
-
-    # Observe that all parameters are being optimized
-    # optimizer_ft = optim.SGD(model_ft.parameters(), lr=lr, momentum=mom)
-    optimizer_ft = optim.Adam(model_ft.parameters(), lr=lr)
+    optimizer_ft = optim.Adam(model.parameters(), lr=lr)
 
     # Decay LR by a factor of 0.1 every 7 epochs
     scheduler = lr_scheduler.OneCycleLR(
@@ -187,19 +204,20 @@ def objective(trial):
 
     scaler = torch.cuda.amp.GradScaler()
 
+    
     # train it!
     for epoch in range(NUM_EPOCHS):
         print(f"Epoch {epoch+1}/{NUM_EPOCHS}")
         train_one_epoch(
             dataloaders["train"],
-            model_ft,
+            model,
             optimizer_ft,
             loss_fn,
             scaler,
             scheduler=scheduler,
         )
 
-    recall = check_recall_manually(model=model_ft, loader=dataloaders["val"])
+    recall = check_recall_manually(model=model, loader=dataloaders["val"])
     # recall = check_recall(model=model_ft, loader=dataloaders["val"])
 
     return recall
