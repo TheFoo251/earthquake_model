@@ -22,3 +22,4 @@ dependencies:
       # pip-only packages
       - patchify
       - segmentation-models-pytorch
+      - torcheval

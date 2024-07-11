@@ -53,7 +53,7 @@ def get_loaders(
     return {"train": train_loader, "val": val_loader}
 
 
-def check_accuracy(loader, model, device="cuda"):
+def dice_score(loader, model, device="cuda"):
     """
     simplistic accuracy checker
     """
@@ -89,19 +89,6 @@ def save_predictions_as_imgs(loader, model, folder="saved_images/", device="cuda
             torchvision.utils.save_image(y.unsqueeze(1), f"{folder}/{idx}_real.png")
 
     model.train()
-
-
-def imshow(imgs, title=None):
-    """Plot tensors as images"""
-    if not isinstance(imgs, list):
-        imgs = [imgs]
-    fig, axs = plt.subplots(ncols=len(imgs), squeeze=False)
-    for i, img in enumerate(imgs):
-        img = img.detach()
-        img = TF.to_pil_image(img)
-        axs[0, i].imshow(np.asarray(img))
-        if title is not None:
-            plt.title(title)
 
 
 def imshow(imgs, title=None):
