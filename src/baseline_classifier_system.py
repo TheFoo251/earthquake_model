@@ -168,10 +168,25 @@ def check_recall_manually(loader, model):
     return recall
 
 
+def count_positive_pred(loader, model):
+    running_target_p = 0
+    running_p_preds = 0
+    model.eval()
+    with torch.no_grad():
+        for _, _, data, _, targets in loader:
+            data, targets = data.to(DEVICE), targets.to(DEVICE)
+            preds = model(data)
+            running_p_preds += torch.sum(torch.argmax(preds, dim=1)).item()
+            running_target_p += torch.sum(targets).item()
+    print(
+        f"model made {running_p_preds} p preds; there are {running_target_p} p in the dataset"
+    )
+
+
 def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
-    gamma = trial.suggest_int("gamma", 1, 10)
+    gamma = trial.suggest_int("gamma", 5, 10)  # a higher gamma is good for imbalance
 
     # get data
     dataloaders = get_loaders(PATCH_SZ, BATCH_SZ)
@@ -226,6 +241,10 @@ def objective(trial):
             scheduler=scheduler,
         )
         val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
+        print("training:")
+        count_positive_pred(model=model, loader=dataloaders["train"])
+        print("validation")
+        count_positive_pred(model=model, loader=dataloaders["val"])
 
     recall = check_recall_manually(model=model, loader=dataloaders["val"])
     # recall = check_recall(model=model_ft, loader=dataloaders["val"])

@@ -59,8 +59,8 @@ if __name__ == "__main__":
     ds = SiameseDataset(patch_sz=256)
     damaged_data = [x for x in ds if x[4] == 1]
     undamaged_data = [x for x in ds if x[4] == 0]
-    print("number of damaged instances: ", len(damaged_data))
-    print("number of undamaged instances: ", len(undamaged_data))
+    print("number of damaged instances: ", len(damaged_data))  # 147
+    print("number of undamaged instances: ", len(undamaged_data))  # 2941
 
     from torch_utils import imshow
 

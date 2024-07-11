@@ -105,3 +105,7 @@ def imshow(imgs, title=None):
             plt.title(title)
     plt.ioff()
     plt.show()
+
+
+if __name__ == "__main__":
+    pass
