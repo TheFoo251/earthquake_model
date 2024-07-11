@@ -49,7 +49,8 @@ class SiameseDataset(Dataset):
         # don't be too clever for your own good. This works fine.
         label = (
             torch.max(post_mask) > 1
-        ).int()  # best practice is to have it be the label number
+        ).long()  # best practice is to have it be the label number??
+        # needs to be long to work with any pytorch stuff for some reason
 
         return pre_image, pre_mask, post_image, post_mask, label
 
