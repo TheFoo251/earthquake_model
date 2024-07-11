@@ -93,50 +93,50 @@ def val_one_epoch():
 
 
 # --- METRICS ---
-def check_accuracy(loader, model):
-    correct = 0
-    model.eval()
-    with torch.no_grad():
-        for _, _, data, _, targets in loader:
-            data, targets = data.to(DEVICE), targets.to(DEVICE)
-            preds = torch.sigmoid(model(data))
-            true_positives += torch.sum(targets == torch.argmax(preds, dim=1)).item()
-        accuracy = true_positives / torch.sum(targets == 1)
+# def check_accuracy(loader, model):
+#     correct = 0
+#     model.eval()
+#     with torch.no_grad():
+#         for _, _, data, _, targets in loader:
+#             data, targets = data.to(DEVICE), targets.to(DEVICE)
+#             preds = torch.sigmoid(model(data))
+#             true_positives += torch.sum(targets == torch.argmax(preds, dim=1)).item()
+#         accuracy = true_positives / torch.sum(targets == 1)
 
-    model.train()
-    return accuracy
-
-
-def check_f1_score(loader, model):
-    running_f1_score = 0
-    model.eval()
-    with torch.no_grad():
-        for _, _, data, _, targets in loader:
-            data, targets = data.to(DEVICE), targets.to(DEVICE)
-            preds = model(data)
-            running_f1_score += FM.multiclass_f1_score(
-                preds, targets, num_classes=2
-            ).item()
-        avg_f1_score = running_f1_score / len(loader)
-
-    model.train()
-    return avg_f1_score
+#     model.train()
+#     return accuracy
 
 
-def check_recall(loader, model):  # What I'm most interested in....
-    running_f1_score = 0
-    model.eval()
-    with torch.no_grad():
-        for _, _, data, _, targets in loader:
-            data, targets = data.to(DEVICE), targets.to(DEVICE)
-            preds = model(data)
-            running_f1_score += FM.multiclass_recall(
-                preds, targets, num_classes=2
-            ).item()
-        avg_f1_score = running_f1_score / len(loader)
+# def check_f1_score(loader, model):
+#     running_f1_score = 0
+#     model.eval()
+#     with torch.no_grad():
+#         for _, _, data, _, targets in loader:
+#             data, targets = data.to(DEVICE), targets.to(DEVICE)
+#             preds = model(data)
+#             running_f1_score += FM.multiclass_f1_score(
+#                 preds, targets, num_classes=2
+#             ).item()
+#         avg_f1_score = running_f1_score / len(loader)
 
-    model.train()
-    return avg_f1_score
+#     model.train()
+#     return avg_f1_score
+
+
+# def check_recall(loader, model):  # What I'm most interested in....
+#     running_f1_score = 0
+#     model.eval()
+#     with torch.no_grad():
+#         for _, _, data, _, targets in loader:
+#             data, targets = data.to(DEVICE), targets.to(DEVICE)
+#             preds = model(data)
+#             running_f1_score += FM.multiclass_recall(
+#                 preds, targets, num_classes=2
+#             ).item()
+#         avg_f1_score = running_f1_score / len(loader)
+
+#     model.train()
+#     return avg_f1_score
 
 
 def check_recall_manually(loader, model):
