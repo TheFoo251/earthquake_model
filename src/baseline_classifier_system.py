@@ -14,6 +14,7 @@ from tempfile import TemporaryDirectory
 from tqdm import tqdm
 import optuna
 import torcheval.metrics.functional as FM
+import torch.nn.functional as F
 
 
 # other files
@@ -31,6 +32,31 @@ NUM_TRIALS = 2
 # get data
 dataloaders = get_loaders(PATCH_SZ, BATCH_SZ)
 dataset_sizes = {x: len(dataloaders[x]) for x in ["train", "val"]}
+
+# losses
+
+
+# copied from https://github.com/ashawkey/FocalLoss.pytorch/blob/master/Explaination.md
+class FocalLoss(nn.Module):
+    """
+    Multi-class Focal Loss
+    """
+
+    def __init__(self, gamma=2, weight=None):
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        self.weight = weight
+
+    def forward(self, input, target):
+        """
+        input: [N, C], float32
+        target: [N, ], int64
+        """
+        logpt = F.log_softmax(input, dim=1)
+        pt = torch.exp(logpt)
+        logpt = (1 - pt) ** self.gamma * logpt
+        loss = F.nll_loss(logpt, target, self.weight)
+        return loss
 
 
 def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):
@@ -125,12 +151,9 @@ def check_recall_manually(loader, model):
                 (targets == torch.argmax(preds, dim=1)) * targets
             ).item()
             running_target_p += torch.sum(targets).item()
-
-        print(
-            f"\nTrue positive predictions / total ground positives: {running_true_p}/{running_target_p}\n"
-        )
-
+        recall = running_true_p / running_target_p
     model.train()
+    return recall
 
 
 def objective(trial):
@@ -147,9 +170,8 @@ def objective(trial):
 
     model_ft = model_ft.to(DEVICE)
 
-    loss_fn = (
-        nn.CrossEntropyLoss()
-    )  # get a better loss function to deal with class imbalance...
+    # loss_fn = nn.CrossEntropyLoss() # get a better loss function to deal with class imbalance...
+    loss_fn = FocalLoss()
 
     # Observe that all parameters are being optimized
     # optimizer_ft = optim.SGD(model_ft.parameters(), lr=lr, momentum=mom)
@@ -174,12 +196,12 @@ def objective(trial):
             scheduler=exp_lr_scheduler,
         )
 
-    check_recall_manually(model=model_ft, loader=dataloaders["val"])
-    recall = check_recall(model=model_ft, loader=dataloaders["val"])
+    recall = check_recall_manually(model=model_ft, loader=dataloaders["val"])
+    # recall = check_recall(model=model_ft, loader=dataloaders["val"])
 
     return recall
 
 
 if __name__ == "__main__":
-    study = optuna.create_study()
+    study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=NUM_TRIALS)
