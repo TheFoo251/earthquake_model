@@ -23,12 +23,12 @@ from torch_utils import get_loaders
 
 cudnn.benchmark = True
 
-NUM_EPOCHS = 10
+NUM_EPOCHS = 2
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 PATCH_SZ, BATCH_SZ = 256, 16
 
-NUM_TRIALS = 2
+NUM_TRIALS = 20
 
 
 # losses
@@ -135,58 +135,74 @@ def val_one_epoch(loader, model, loss_fn):
 #     return avg_f1_score
 
 
-# def check_recall(loader, model):  # What I'm most interested in....
-#     running_f1_score = 0
+def check_recall(loader, model):  # What I'm most interested in....
+    running_recall = 0
+    model.eval()
+    with torch.no_grad():
+        for _, _, data, _, targets in loader:
+            data, targets = data.to(DEVICE), targets.to(DEVICE)
+            preds = model(data)
+            running_recall += FM.multiclass_recall(preds, targets, num_classes=2).item()
+        avg_recall = running_recall / len(loader)
+
+    model.train()
+    return avg_recall
+
+
+def check_precision(loader, model):  # What I'm most interested in....
+    running_precision = 0
+    model.eval()
+    with torch.no_grad():
+        for _, _, data, _, targets in loader:
+            data, targets = data.to(DEVICE), targets.to(DEVICE)
+            preds = model(data)
+            running_precision += FM.multiclass_precision(
+                preds, targets, num_classes=2
+            ).item()
+        avg_precision = running_precision / len(loader)
+
+    model.train()
+    return avg_precision
+
+
+# def check_recall_manually(loader, model):
+#     running_target_p = 0
+#     running_true_p = 0
 #     model.eval()
 #     with torch.no_grad():
 #         for _, _, data, _, targets in loader:
 #             data, targets = data.to(DEVICE), targets.to(DEVICE)
 #             preds = model(data)
-#             running_f1_score += FM.multiclass_recall(
-#                 preds, targets, num_classes=2
+#             running_true_p += torch.sum(
+#                 (targets == torch.argmax(preds, dim=-1)) * targets  # dim NEEDS to be -1
 #             ).item()
-#         avg_f1_score = running_f1_score / len(loader)
-
+#             running_target_p += torch.sum(targets).item()
+#         recall = running_true_p / running_target_p
 #     model.train()
-#     return avg_f1_score
+#     return recall
 
 
-def check_recall_manually(loader, model):
-    running_target_p = 0
-    running_true_p = 0
-    model.eval()
-    with torch.no_grad():
-        for _, _, data, _, targets in loader:
-            data, targets = data.to(DEVICE), targets.to(DEVICE)
-            preds = model(data)
-            running_true_p += torch.sum(
-                (targets == torch.argmax(preds, dim=1)) * targets
-            ).item()
-            running_target_p += torch.sum(targets).item()
-        recall = running_true_p / running_target_p
-    model.train()
-    return recall
-
-
-def count_positive_pred(loader, model):
-    running_target_p = 0
-    running_p_preds = 0
-    model.eval()
-    with torch.no_grad():
-        for _, _, data, _, targets in loader:
-            data, targets = data.to(DEVICE), targets.to(DEVICE)
-            preds = model(data)
-            running_p_preds += torch.sum(torch.argmax(preds, dim=1)).item()
-            running_target_p += torch.sum(targets).item()
-    print(
-        f"model made {running_p_preds} p preds; there are {running_target_p} p in the dataset"
-    )
+# def count_positive_pred(loader, model):
+#     running_target_p = 0
+#     running_p_preds = 0
+#     model.eval()
+#     with torch.no_grad():
+#         for _, _, data, _, targets in loader:
+#             data, targets = data.to(DEVICE), targets.to(DEVICE)
+#             preds = model(data)
+#             running_p_preds += torch.sum(torch.argmax(preds, dim=-1)).item()
+#             running_target_p += torch.sum(targets).item()
+#     print(
+#         f"model made {running_p_preds} p preds; there are {running_target_p} p in the dataset"
+#     )
 
 
 def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
-    gamma = trial.suggest_int("gamma", 5, 10)  # a higher gamma is good for imbalance
+    gamma = trial.suggest_int(
+        "gamma", 10, 20
+    )  # a higher gamma is good for imbalance --> model freaks out at 20, 10 not enough
 
     # get data
     dataloaders = get_loaders(PATCH_SZ, BATCH_SZ)
@@ -241,17 +257,19 @@ def objective(trial):
             scheduler=scheduler,
         )
         val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
-        print("training:")
-        count_positive_pred(model=model, loader=dataloaders["train"])
-        print("validation")
-        count_positive_pred(model=model, loader=dataloaders["val"])
+        # print("training:")
+        # count_positive_pred(model=model, loader=dataloaders["train"])
+        # print("validation")
+        # count_positive_pred(model=model, loader=dataloaders["val"])
 
-    recall = check_recall_manually(model=model, loader=dataloaders["val"])
-    # recall = check_recall(model=model_ft, loader=dataloaders["val"])
+    # recall = check_recall_manually(model=model, loader=dataloaders["val"])
 
-    return recall
+    recall = check_recall(model=model, loader=dataloaders["val"])
+    precision = check_precision(model=model, loader=dataloaders["val"])
+
+    return precision, recall
 
 
 if __name__ == "__main__":
-    study = optuna.create_study(direction="maximize")
+    study = optuna.create_study(directions=["maximize", "maximize"])
     study.optimize(objective, n_trials=NUM_TRIALS)
