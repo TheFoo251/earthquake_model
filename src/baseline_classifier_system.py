@@ -25,7 +25,7 @@ from torch_utils import get_loaders
 
 cudnn.benchmark = True
 
-NUM_EPOCHS = 2
+NUM_EPOCHS = 1
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 PATCH_SZ, BATCH_SZ = 256, 16
@@ -144,21 +144,26 @@ def check_recall(loader, model):  # What I'm most interested in....
         for _, _, data, _, targets in loader:
             data, targets = data.to(DEVICE), targets.to(DEVICE)
             preds = model(data)
-            running_recall += FM.binary_recall(preds[..., -1:].squeeze(-1), targets).item()
+            print(targets)
+            running_recall += FM.binary_recall(
+                preds[..., -1:].squeeze(-1), targets
+            ).item()
         avg_recall = running_recall / len(loader)
 
     model.train()
     return avg_recall
 
 
-def check_precision(loader, model):  # What I'm most interested in....
+def check_precision(loader, model):
     running_precision = 0
     model.eval()
     with torch.no_grad():
         for _, _, data, _, targets in loader:
             data, targets = data.to(DEVICE), targets.to(DEVICE)
             preds = model(data)
-            running_precision += FM.binary_precision(preds[..., -1:].squeeze(-1), targets).item()
+            running_precision += FM.binary_precision(
+                preds[..., -1:].squeeze(-1), targets
+            ).item()
         avg_precision = running_precision / len(loader)
 
     model.train()
