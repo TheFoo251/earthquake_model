@@ -26,7 +26,7 @@ from torch_utils import get_loaders, get_even_loaders
 
 cudnn.benchmark = True
 
-NUM_EPOCHS = 10
+NUM_EPOCHS = 5
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 PATCH_SZ, BATCH_SZ = 256, 16
