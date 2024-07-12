@@ -25,12 +25,12 @@ from torch_utils import get_loaders
 
 cudnn.benchmark = True
 
-NUM_EPOCHS = 1
+NUM_EPOCHS = 4
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 PATCH_SZ, BATCH_SZ = 256, 16
 
-NUM_TRIALS = 20
+NUM_TRIALS = 40
 
 
 # losses
@@ -204,12 +204,17 @@ def check_precision(loader, model):
 def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
-    gamma = trial.suggest_int(
-        "gamma", 20, 20
-    )  # a higher gamma is good for imbalance --> model freaks out at 20, 10 not enough
+    # gamma = trial.suggest_int(
+    #     "gamma", 30, 30
+    # )  # a higher gamma is good for imbalance --> model freaks out at 20, 10 not enough
 
-    # get data
+    # get data and calculate appropriate weights
     dataloaders = get_loaders(PATCH_SZ, BATCH_SZ)
+    labels = torch.tensor([x[4] for x in dataloaders["train"].dataset])
+    num_pos = torch.sum(labels)
+    neg_weight = num_pos / len(labels)
+    pos_weight = 1 - neg_weight
+    weights = torch.FloatTensor([neg_weight, pos_weight]).cuda()
 
     # here's where the transfer magic happens...
     model = models.convnext_base(weights=models.ConvNeXt_Base_Weights.DEFAULT)
@@ -239,7 +244,7 @@ def objective(trial):
 
     model = model.to(DEVICE)
 
-    loss_fn = FocalLoss(gamma=gamma)
+    loss_fn = nn.CrossEntropyLoss(weight=weights)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
 
     # Decay LR by a factor of 0.1 every 7 epochs
