@@ -204,7 +204,6 @@ def check_precision(loader, model):
 
 model_weights = models.ConvNeXt_Base_Weights.DEFAULT
 auto_transforms = model_weights.transforms()  # need these for pre-training
-model = models.convnext_base(weights=model_weights)
 
 # get data and calculate appropriate weights
 dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
@@ -226,6 +225,7 @@ def objective(trial):
     # here's where the transfer magic happens...
 
     loss_weights = torch.FloatTensor([neg_weight, pos_weight]).cuda()
+    model = models.convnext_base(weights=model_weights)  # define model inside
 
     # this section copied from https://medium.com/exemplifyml-ai/image-classification-with-resnet-convnext-using-pytorch-f051d0d7e098
     n_inputs = None
