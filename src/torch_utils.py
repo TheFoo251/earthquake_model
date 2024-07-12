@@ -41,6 +41,7 @@ def get_loaders(
         num_workers=num_workers,  # TODO look up 'workers'
         pin_memory=pin_memory,  # TODO look up pin memory
         shuffle=True,
+        drop_last=True,
     )
 
     val_loader = DataLoader(
@@ -49,6 +50,7 @@ def get_loaders(
         num_workers=num_workers,
         pin_memory=pin_memory,
         shuffle=False,
+        drop_last=True,
     )
 
     return {"train": train_loader, "val": val_loader}
@@ -80,6 +82,7 @@ def get_even_loaders(
         num_workers=num_workers,  # TODO look up 'workers'
         pin_memory=pin_memory,  # TODO look up pin memory
         shuffle=True,
+        drop_last=True,
     )
 
     val_loader = DataLoader(
@@ -88,6 +91,7 @@ def get_even_loaders(
         num_workers=num_workers,
         pin_memory=pin_memory,
         shuffle=False,
+        drop_last=True,
     )
 
     return {"train": train_loader, "val": val_loader}
