@@ -212,7 +212,7 @@ model_weights = models.ConvNeXt_Base_Weights.DEFAULT
 auto_transforms = model_weights.transforms()  # need these for pre-training
 
 # get data and calculate appropriate weights
-dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
+dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms, split=0.7)
 labels = torch.tensor([x[4] for x in dataloaders["train"].dataset])
 num_pos = torch.sum(labels)
 neg_weight = num_pos / len(labels)
