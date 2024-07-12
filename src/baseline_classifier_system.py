@@ -205,7 +205,7 @@ def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
     gamma = trial.suggest_int(
-        "gamma", 10, 20
+        "gamma", 20, 20
     )  # a higher gamma is good for imbalance --> model freaks out at 20, 10 not enough
 
     # get data

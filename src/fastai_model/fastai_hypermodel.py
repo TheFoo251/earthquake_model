@@ -11,9 +11,7 @@ from PIL import Image
 import optuna
 from optuna.integration import FastAIPruningCallback
 import optuna.visualization.matplotlib as vs
-
-# import monai.losses as mdlss #(med loss)
-from old_code.extra_loss_functions import *
+from fastai_model.extra_loss_functions import *
 import logging
 import sys
 
