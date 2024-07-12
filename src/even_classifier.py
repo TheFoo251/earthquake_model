@@ -134,10 +134,8 @@ def objective(trial):
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
 
     # here's where the transfer magic happens...
-    
-    model = models.convnext_base(weights=model_weights)
 
-    
+    model = models.convnext_base(weights=model_weights)
 
     # this section copied from https://medium.com/exemplifyml-ai/image-classification-with-resnet-convnext-using-pytorch-f051d0d7e098
     n_inputs = None
@@ -186,6 +184,9 @@ def objective(trial):
             scheduler=scheduler,
         )
         val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
+        epoch_accuracy = check_accuracy(loader=dataloaders["val"], model=model)
+        print("accuracy:", epoch_accuracy)
+        trial.report(epoch_accuracy, epoch)
 
     accuracy = check_accuracy(loader=dataloaders["val"], model=model)
     return accuracy
@@ -194,7 +195,7 @@ def objective(trial):
 if __name__ == "__main__":
 
     optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
-    study_name = "even-classifier-study"  # Unique identifier of the study.
+    study_name = "even-classifier-study-2"  # Unique identifier of the study.
     storage_name = "sqlite:///{}.db".format(study_name)
     study = optuna.create_study(
         study_name=study_name,
