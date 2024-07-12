@@ -19,6 +19,7 @@ from torchvision.models.convnext import LayerNorm2d
 import math
 import logging
 import sys
+from torchvision.ops import sigmoid_focal_loss
 
 # other files
 from torch_utils import get_loaders, get_even_loaders
@@ -30,7 +31,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 PATCH_SZ, BATCH_SZ = 256, 16
 
-NUM_TRIALS = 40
+NUM_TRIALS = 30
 
 
 # losses
@@ -212,6 +213,9 @@ num_pos = torch.sum(labels)
 neg_weight = num_pos / len(labels)
 pos_weight = 1 - neg_weight
 
+print(f"weights: [{neg_weight}, {pos_weight}]")
+
+
 def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
@@ -221,8 +225,6 @@ def objective(trial):
 
     # here's where the transfer magic happens...
 
-
-    
     loss_weights = torch.FloatTensor([neg_weight, pos_weight]).cuda()
 
     # this section copied from https://medium.com/exemplifyml-ai/image-classification-with-resnet-convnext-using-pytorch-f051d0d7e098
@@ -251,6 +253,7 @@ def objective(trial):
     model = model.to(DEVICE)
 
     loss_fn = nn.CrossEntropyLoss(weight=loss_weights)
+    # loss_fn = FocalLoss()
     optimizer = optim.AdamW(model.parameters(), lr=lr)
 
     # Decay LR by a factor of 0.1 every 7 epochs
@@ -276,7 +279,7 @@ def objective(trial):
         epoch_precision = check_precision(model=model, loader=dataloaders["val"])
         trial.report(epoch_recall, epoch)
         trial.report(epoch_precision, epoch)
-    
+
     recall = check_recall(model=model, loader=dataloaders["val"])
     precision = check_precision(model=model, loader=dataloaders["val"])
 
