@@ -201,6 +201,17 @@ def check_precision(loader, model):
 #     )
 
 
+model_weights = models.ConvNeXt_Base_Weights.DEFAULT
+auto_transforms = model_weights.transforms()  # need these for pre-training
+model = models.convnext_base(weights=model_weights)
+
+# get data and calculate appropriate weights
+dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
+labels = torch.tensor([x[4] for x in dataloaders["train"].dataset])
+num_pos = torch.sum(labels)
+neg_weight = num_pos / len(labels)
+pos_weight = 1 - neg_weight
+
 def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
@@ -209,16 +220,9 @@ def objective(trial):
     # )  # a higher gamma is good for imbalance --> model freaks out at 20, 10 not enough
 
     # here's where the transfer magic happens...
-    model_weights = models.ConvNeXt_Base_Weights.DEFAULT
-    auto_transforms = model_weights.transforms()  # need these for pre-training
-    model = models.convnext_base(weights=model_weights)
 
-    # get data and calculate appropriate weights
-    dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
-    labels = torch.tensor([x[4] for x in dataloaders["train"].dataset])
-    num_pos = torch.sum(labels)
-    neg_weight = num_pos / len(labels)
-    pos_weight = 1 - neg_weight
+
+    
     loss_weights = torch.FloatTensor([neg_weight, pos_weight]).cuda()
 
     # this section copied from https://medium.com/exemplifyml-ai/image-classification-with-resnet-convnext-using-pytorch-f051d0d7e098
