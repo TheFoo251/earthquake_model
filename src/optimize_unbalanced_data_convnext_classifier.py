@@ -276,14 +276,15 @@ def objective(trial):
         )
         val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
         epoch_recall = check_recall(model=model, loader=dataloaders["val"])
-        epoch_precision = check_precision(model=model, loader=dataloaders["val"])
+        #epoch_precision = check_precision(model=model, loader=dataloaders["val"])
         trial.report(epoch_recall, epoch)
-        trial.report(epoch_precision, epoch)
+        #trial.report(epoch_precision, epoch)
 
     recall = check_recall(model=model, loader=dataloaders["val"])
-    precision = check_precision(model=model, loader=dataloaders["val"])
+    #precision = check_precision(model=model, loader=dataloaders["val"])
 
-    return precision, recall
+    #return precision, recall
+    return recall
 
 
 if __name__ == "__main__":
