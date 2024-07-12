@@ -131,7 +131,7 @@ dataloaders = get_even_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
 
 def objective(trial):
 
-    lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
+    lr = trial.suggest_float("learning_rate", 1e-7, 1e-5)
 
     # here's where the transfer magic happens...
 
