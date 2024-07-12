@@ -184,7 +184,7 @@ def objective(trial):
         )
         val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
 
-    accuracy = check_accuracy
+    accuracy = check_accuracy(loader=dataloaders["val"], model=model)
     return accuracy
 
 
