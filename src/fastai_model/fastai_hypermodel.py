@@ -11,10 +11,10 @@ from PIL import Image
 import optuna
 from optuna.integration import FastAIPruningCallback
 import optuna.visualization.matplotlib as vs
-from fastai_model.extra_loss_functions import *
+from extra_loss_functions import *
 import logging
 import sys
-
+import gc
 
 # NON-OPTIMIZED HYPERPARAMS (cause my GPU can't handle it :P)
 
@@ -34,13 +34,10 @@ EPOCHS = 8
 NUM_TRIALS = 150
 
 
-# ### Pre-pipeline processing with patchify
-
-
 # ### Make Optimizer
 
 
-patch_dir = Path(f"../data/{PATCH_SZ}_patches")
+patch_dir = Path(f"data/{PATCH_SZ}_patches/post-disaster")
 path = patch_dir
 codes = ["Background", "NoDamage", "MinorDamage", "MajorDamage", "Destroyed"]
 
@@ -119,8 +116,13 @@ def objective(trial):
             learn.fine_tune(
                 epochs=EPOCHS, base_lr=lr, freeze_epochs=FREEZE_EPOCHS, cbs=model_cbs
             )
+    metric = learn.recorder.metrics[0].value.item()  # only one metric to worry about
+    # memory management
+    del learn
+    torch.cuda.empty_cache()
+    gc.collect()
 
-    return learn.recorder.metrics[0].value.item()  # only one metric to worry about
+    return metric
 
 
 # ### Optimize
@@ -138,7 +140,7 @@ study = optuna.create_study(
 )
 
 
-study.optimize(objective, n_trials=NUM_TRIALS, timeout=None)
+study.optimize(objective, n_trials=NUM_TRIALS, timeout=None, gc_after_trial=True)
 
 
 # print a bunch of junk
