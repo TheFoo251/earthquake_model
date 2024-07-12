@@ -82,8 +82,14 @@ def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):
         # backward (backward -> optimizer step -> scheduler step)
         scaler.scale(loss).backward()  # backward pass using scaler
         scaler.step(optimizer)  # optimizer step using scaler
+
+        old_scaler = scaler.get_scale()
         scaler.update()  # updates for next iteration
-        scheduler.step()  # has to be after the optimizer step
+        new_scaler = scaler.get_scale()
+        if (
+            new_scaler >= old_scaler
+        ):  # handle scaler so scheduler doesn't get out of wack
+            scheduler.step()  # has to be after the optimizer step
 
         # update tqdm loop
         loop.set_postfix(loss=running_loss / (batch_idx + 1))
@@ -276,14 +282,14 @@ def objective(trial):
         )
         val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
         epoch_recall = check_recall(model=model, loader=dataloaders["val"])
-        #epoch_precision = check_precision(model=model, loader=dataloaders["val"])
+        # epoch_precision = check_precision(model=model, loader=dataloaders["val"])
         trial.report(epoch_recall, epoch)
-        #trial.report(epoch_precision, epoch)
+        # trial.report(epoch_precision, epoch)
 
     recall = check_recall(model=model, loader=dataloaders["val"])
-    #precision = check_precision(model=model, loader=dataloaders["val"])
+    # precision = check_precision(model=model, loader=dataloaders["val"])
 
-    #return precision, recall
+    # return precision, recall
     return recall
 
 
