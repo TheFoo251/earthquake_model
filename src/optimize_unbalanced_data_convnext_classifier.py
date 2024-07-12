@@ -295,7 +295,7 @@ if __name__ == "__main__":
     study = optuna.create_study(
         study_name=study_name,
         storage=storage_name,
-        directions=["maximize", "maximize"],
+        direction="maximize",
         load_if_exists=True,
     )
     study.optimize(objective, n_trials=NUM_TRIALS)
