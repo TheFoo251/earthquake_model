@@ -268,13 +268,11 @@ def objective(trial):
             scheduler=scheduler,
         )
         val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
-        # print("training:")
-        # count_positive_pred(model=model, loader=dataloaders["train"])
-        # print("validation")
-        # count_positive_pred(model=model, loader=dataloaders["val"])
-
-    # recall = check_recall_manually(model=model, loader=dataloaders["val"])
-
+        epoch_recall = check_recall(model=model, loader=dataloaders["val"])
+        epoch_precision = check_precision(model=model, loader=dataloaders["val"])
+        trial.report(epoch_recall, epoch)
+        trial.report(epoch_precision, epoch)
+    
     recall = check_recall(model=model, loader=dataloaders["val"])
     precision = check_precision(model=model, loader=dataloaders["val"])
 
