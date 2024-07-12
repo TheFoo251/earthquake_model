@@ -124,17 +124,20 @@ def check_accuracy(loader, model):
 
 # --- objective ---
 
+model_weights = models.ConvNeXt_Base_Weights.DEFAULT
+auto_transforms = model_weights.transforms()  # need these for pre-training
+dataloaders = get_even_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
+
 
 def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
 
     # here's where the transfer magic happens...
-    model_weights = models.ConvNeXt_Base_Weights.DEFAULT
-    auto_transforms = model_weights.transforms()  # need these for pre-training
+    
     model = models.convnext_base(weights=model_weights)
 
-    dataloaders = get_even_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
+    
 
     # this section copied from https://medium.com/exemplifyml-ai/image-classification-with-resnet-convnext-using-pytorch-f051d0d7e098
     n_inputs = None
