@@ -115,8 +115,8 @@ def check_accuracy(loader, model):
         for _, _, data, _, targets in loader:
             data, targets = data.to(DEVICE), targets.to(DEVICE)
             preds = torch.sigmoid(model(data))
-            true_positives += torch.sum(targets == torch.argmax(preds, dim=1)).item()
-        accuracy = true_positives / torch.sum(targets == 1)
+            correct += torch.sum(targets == torch.argmax(preds, dim=1)).item()
+        accuracy = correct / torch.sum(targets == 1)
 
     model.train()
     return accuracy
