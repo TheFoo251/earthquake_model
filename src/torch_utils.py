@@ -189,6 +189,8 @@ def plot_loss_curves(results):
     plt.xlabel("Epochs")
     plt.legend()
 
+    plt.show()
+
 
 if __name__ == "__main__":
     pass
