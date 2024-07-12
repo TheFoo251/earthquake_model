@@ -114,9 +114,9 @@ def check_accuracy(loader, model):
     with torch.no_grad():
         for _, _, data, _, targets in loader:
             data, targets = data.to(DEVICE), targets.to(DEVICE)
-            preds = torch.sigmoid(model(data))
+            preds = model(data)
             correct += torch.sum(targets == torch.argmax(preds, dim=1)).item()
-        accuracy = correct / torch.sum(targets == 1)
+        accuracy = correct / len(loader) * BATCH_SZ
 
     model.train()
     return accuracy
