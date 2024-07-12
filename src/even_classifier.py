@@ -107,119 +107,34 @@ def val_one_epoch(loader, model, loss_fn):
 
 # --- METRICS ---
 
-# def check_accuracy(loader, model):
-#     correct = 0
-#     model.eval()
-#     with torch.no_grad():
-#         for _, _, data, _, targets in loader:
-#             data, targets = data.to(DEVICE), targets.to(DEVICE)
-#             preds = torch.sigmoid(model(data))
-#             true_positives += torch.sum(targets == torch.argmax(preds, dim=1)).item()
-#         accuracy = true_positives / torch.sum(targets == 1)
 
-#     model.train()
-#     return accuracy
-
-
-# def check_f1_score(loader, model):
-#     running_f1_score = 0
-#     model.eval()
-#     with torch.no_grad():
-#         for _, _, data, _, targets in loader:
-#             data, targets = data.to(DEVICE), targets.to(DEVICE)
-#             preds = model(data)
-#             running_f1_score += FM.multiclass_f1_score(
-#                 preds, targets, num_classes=2
-#             ).item()
-#         avg_f1_score = running_f1_score / len(loader)
-
-#     model.train()
-#     return avg_f1_score
-
-
-def check_recall(loader, model):  # What I'm most interested in....
-    running_recall = 0
+def check_accuracy(loader, model):
+    correct = 0
     model.eval()
     with torch.no_grad():
         for _, _, data, _, targets in loader:
             data, targets = data.to(DEVICE), targets.to(DEVICE)
-            preds = model(data)
-            running_recall += FM.binary_recall(
-                preds[..., -1:].squeeze(-1), targets
-            ).item()
-        avg_recall = running_recall / len(loader)
+            preds = torch.sigmoid(model(data))
+            true_positives += torch.sum(targets == torch.argmax(preds, dim=1)).item()
+        accuracy = true_positives / torch.sum(targets == 1)
 
     model.train()
-    return avg_recall
+    return accuracy
 
 
-def check_precision(loader, model):
-    running_precision = 0
-    model.eval()
-    with torch.no_grad():
-        for _, _, data, _, targets in loader:
-            data, targets = data.to(DEVICE), targets.to(DEVICE)
-            preds = model(data)
-            running_precision += FM.binary_precision(
-                preds[..., -1:].squeeze(-1), targets
-            ).item()
-        avg_precision = running_precision / len(loader)
-
-    model.train()
-    return avg_precision
-
-
-# def check_recall_manually(loader, model):
-#     running_target_p = 0
-#     running_true_p = 0
-#     model.eval()
-#     with torch.no_grad():
-#         for _, _, data, _, targets in loader:
-#             data, targets = data.to(DEVICE), targets.to(DEVICE)
-#             preds = model(data)
-#             running_true_p += torch.sum(
-#                 (targets == torch.argmax(preds, dim=-1)) * targets  # dim NEEDS to be -1
-#             ).item()
-#             running_target_p += torch.sum(targets).item()
-#         recall = running_true_p / running_target_p
-#     model.train()
-#     return recall
-
-
-# def count_positive_pred(loader, model):
-#     running_target_p = 0
-#     running_p_preds = 0
-#     model.eval()
-#     with torch.no_grad():
-#         for _, _, data, _, targets in loader:
-#             data, targets = data.to(DEVICE), targets.to(DEVICE)
-#             preds = model(data)
-#             running_p_preds += torch.sum(torch.argmax(preds, dim=-1)).item()
-#             running_target_p += torch.sum(targets).item()
-#     print(
-#         f"model made {running_p_preds} p preds; there are {running_target_p} p in the dataset"
-#     )
+# --- objective ---
 
 
 def objective(trial):
 
     lr = trial.suggest_float("learning_rate", 1e-5, 1e-2)
-    # gamma = trial.suggest_int(
-    #     "gamma", 30, 30
-    # )  # a higher gamma is good for imbalance --> model freaks out at 20, 10 not enough
 
     # here's where the transfer magic happens...
     model_weights = models.ConvNeXt_Base_Weights.DEFAULT
     auto_transforms = model_weights.transforms()  # need these for pre-training
     model = models.convnext_base(weights=model_weights)
 
-    # get data and calculate appropriate weights
-    dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
-    labels = torch.tensor([x[4] for x in dataloaders["train"].dataset])
-    num_pos = torch.sum(labels)
-    neg_weight = num_pos / len(labels)
-    pos_weight = 1 - neg_weight
-    loss_weights = torch.FloatTensor([neg_weight, pos_weight]).cuda()
+    dataloaders = get_even_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
 
     # this section copied from https://medium.com/exemplifyml-ai/image-classification-with-resnet-convnext-using-pytorch-f051d0d7e098
     n_inputs = None
@@ -246,7 +161,7 @@ def objective(trial):
 
     model = model.to(DEVICE)
 
-    loss_fn = nn.CrossEntropyLoss(weight=loss_weights)
+    loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=lr)
 
     # Decay LR by a factor of 0.1 every 7 epochs
@@ -268,28 +183,20 @@ def objective(trial):
             scheduler=scheduler,
         )
         val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
-        # print("training:")
-        # count_positive_pred(model=model, loader=dataloaders["train"])
-        # print("validation")
-        # count_positive_pred(model=model, loader=dataloaders["val"])
 
-    # recall = check_recall_manually(model=model, loader=dataloaders["val"])
-
-    recall = check_recall(model=model, loader=dataloaders["val"])
-    precision = check_precision(model=model, loader=dataloaders["val"])
-
-    return precision, recall
+    accuracy = check_accuracy
+    return accuracy
 
 
 if __name__ == "__main__":
 
     optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
-    study_name = "convnext-classifier-study"  # Unique identifier of the study.
+    study_name = "even-classifier-study"  # Unique identifier of the study.
     storage_name = "sqlite:///{}.db".format(study_name)
     study = optuna.create_study(
         study_name=study_name,
         storage=storage_name,
-        directions=["maximize", "maximize"],
+        direction="maximize",
         load_if_exists=True,
     )
     study.optimize(objective, n_trials=NUM_TRIALS)

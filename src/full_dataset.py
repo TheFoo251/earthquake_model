@@ -40,11 +40,10 @@ class SiameseDataset(Dataset):
         ).float()  # when should it become a float? Here or the transforms?
         post_mask = TF.pil_to_tensor(Image.open(self.post_masks[index]).convert("L"))
 
-        # if self.transform is not None:
-        #     augmentations = self.transform(image=image, mask=mask)
-        #     image = augmentations["image"]
-        #     mask = augmentations["mask"]
-        # what should be transforms, and what should be part of the Dataset?
+        if self.transform is not None:
+            pre_image = self.transform(pre_image)
+            post_image = self.transform(post_image) # NOT CONSISTENT
+        #what should be transforms, and what should be part of the Dataset?
 
         # don't be too clever for your own good. This works fine.
         label = (
