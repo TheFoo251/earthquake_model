@@ -61,7 +61,7 @@ def get_even_loaders(
     num_workers=4,
     pin_memory=True,
     transforms=None,
-    split=0.9,
+    split=0.8,
 ):
     full_ds = SiameseDataset(patch_sz=patch_sz, transform=transforms)
     damaged_ds = [x for x in full_ds if x[4] == 1]
