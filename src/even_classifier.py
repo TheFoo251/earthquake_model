@@ -116,7 +116,7 @@ def check_accuracy(loader, model):
             data, targets = data.to(DEVICE), targets.to(DEVICE)
             preds = model(data)
             correct += torch.sum(targets == torch.argmax(preds, dim=1)).item()
-        accuracy = correct / len(loader) * BATCH_SZ
+        accuracy = correct / len(loader.dataset)
 
     model.train()
     return accuracy
