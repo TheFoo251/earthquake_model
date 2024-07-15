@@ -8,7 +8,6 @@ from tqdm import tqdm
 from torchvision.models.convnext import LayerNorm2d
 import math
 import transforms
-from learner import Learner
 
 # other files
 from full_dataset import get_loaders
@@ -20,9 +19,6 @@ NUM_EPOCHS = 30
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 PATCH_SZ, BATCH_SZ = 256, 16  # lower batch size?
-
-
-
 
 
 class Learner:
