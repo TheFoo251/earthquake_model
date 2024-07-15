@@ -19,6 +19,7 @@ from torchvision.models.convnext import LayerNorm2d
 import math
 import logging
 import sys
+import transforms
 
 # other files
 from full_dataset import get_loaders
@@ -100,7 +101,7 @@ def check_accuracy(loader, model):
 
 
 model_weights = models.ConvNeXt_Base_Weights.DEFAULT
-dataloaders = get_loaders(PATCH_SZ, BATCH_SZ)
+dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=transforms.CONVNEXT)
 
 
 lr = 9e-6  # from optimizer study, close to 1e-5

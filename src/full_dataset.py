@@ -62,36 +62,12 @@ class SiameseDataset(Dataset):
         return pre_image, pre_mask, post_image, post_mask, label
 
 
-# currently, this can't have any randomness, or the image/mask don't match anymore
-convnext_transforms = {
-    "image": v2.Compose(
-        [
-            v2.ToImage(),
-            v2.Resize(224),
-            v2.ToDtype(torch.float32, scale=True),  # scale images to [0.0, 1.0]
-            v2.Normalize(
-                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-            ),  # make sure to normalize to match ConvNext
-        ]
-    ),
-    "mask": v2.Compose(
-        [
-            v2.ToImage(),
-            v2.Resize(224),
-            v2.ToDtype(
-                torch.float32, scale=False
-            ),  # make sure to turn off scaling for mask
-        ]
-    ),
-}
-
-
 def get_loaders(
     patch_sz,
     batch_size,
     num_workers=4,
     pin_memory=True,
-    transforms=convnext_transforms,
+    transforms=None,
     split=0.9,
     even=True,
 ):
