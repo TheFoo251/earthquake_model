@@ -125,8 +125,7 @@ def check_accuracy(loader, model):
 # --- objective ---
 
 model_weights = models.ConvNeXt_Base_Weights.DEFAULT
-auto_transforms = model_weights.transforms()  # need these for pre-training
-dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
+dataloaders = get_loaders(PATCH_SZ, BATCH_SZ)
 
 
 def objective(trial):
