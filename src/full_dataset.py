@@ -21,9 +21,9 @@ class SiameseDataset(Dataset):
     The dataset returns PIL images and expects ALL transforms to take place externally.
     """
 
-    def __init__(self, patch_sz, transform=None):
+    def __init__(self, patch_sz, transforms=None):
         self.base_path = Path(f"data/{patch_sz}_patches")
-        self.transform = transform
+        self.transform = transforms
 
         self.pre_images = sorted(
             list((self.base_path / "pre-disaster" / "images").glob("*.png"))
@@ -72,49 +72,14 @@ def get_loaders(
     pin_memory=True,
     transforms=None,
     split=0.9,
+    even=True,
 ):
-    full_ds = SiameseDataset(patch_sz=patch_sz, transform=transforms)
-    num_train = int(len(full_ds) * split)
-    train_ds, val_ds = torch.utils.data.random_split(
-        full_ds,
-        [num_train, len(full_ds) - num_train],
-    )
-
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=batch_size,
-        num_workers=num_workers,  # TODO look up 'workers'
-        pin_memory=pin_memory,  # TODO look up pin memory
-        shuffle=True,
-        drop_last=True,
-    )
-
-    val_loader = DataLoader(
-        val_ds,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        shuffle=False,
-        drop_last=True,
-    )
-
-    return {"train": train_loader, "val": val_loader}
-
-
-# keep separate
-def get_even_loaders(
-    patch_sz,
-    batch_size,
-    num_workers=4,
-    pin_memory=True,
-    transforms=None,
-    split=0.9,
-):
-    full_ds = SiameseDataset(patch_sz=patch_sz, transform=transforms)
-    damaged_ds = [x for x in full_ds if x[4] == 1]
-    undamaged_ds = [x for x in full_ds if x[4] == 0]
-    undamaged_ds = torch.utils.data.Subset(undamaged_ds, range(len(damaged_ds)))
-    full_ds = torch.utils.data.ConcatDataset([damaged_ds, undamaged_ds])
+    full_ds = SiameseDataset(patch_sz=patch_sz, transforms=transforms)
+    if even:
+        damaged_ds = [x for x in full_ds if x[4] == 1]
+        undamaged_ds = [x for x in full_ds if x[4] == 0]
+        undamaged_ds = torch.utils.data.Subset(undamaged_ds, range(len(damaged_ds)))
+        full_ds = torch.utils.data.ConcatDataset([damaged_ds, undamaged_ds])
     num_train = int(len(full_ds) * split)
     train_ds, val_ds = torch.utils.data.random_split(
         full_ds,

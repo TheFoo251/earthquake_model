@@ -21,7 +21,7 @@ import logging
 import sys
 
 # other files
-from full_dataset import get_even_loaders
+from full_dataset import get_loaders
 
 cudnn.benchmark = True
 
@@ -126,7 +126,7 @@ def check_accuracy(loader, model):
 
 model_weights = models.ConvNeXt_Base_Weights.DEFAULT
 auto_transforms = model_weights.transforms()  # need these for pre-training
-dataloaders = get_even_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
+dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=auto_transforms)
 
 
 def objective(trial):
