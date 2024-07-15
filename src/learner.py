@@ -9,7 +9,7 @@ class Learner:
         self, loader, model, optimizer, loss_fn, scaler, scheduler, device=DEVICE
     ):
         self.loader = loader
-        self.model = model
+        self.model = model.to(DEVICE)
         self.optimizer = optimizer
         self.loss_fn = loss_fn
         self.scaler = scaler

@@ -58,8 +58,6 @@ sequential_layers = nn.Sequential(
 )
 model.classifier = sequential_layers
 
-model = model.to(DEVICE)
-
 loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=lr)
 
