@@ -35,6 +35,9 @@ class SiameseDataset(Dataset):
             list((self.base_path / "post-disaster" / "targets").glob("*.png"))
         )
 
+        # probably better... refactor later
+        # self.labels = [(torch.max(v2.functional.pil_to_tensor(mask)) > 1) for mask in self.masks]
+
     def __len__(self):
         return len(self.post_images)
 
@@ -63,7 +66,43 @@ class SiameseDataset(Dataset):
         return pre_image, pre_mask, post_image, post_mask, label
 
 
-def get_loaders(
+class DamagedOnly(Dataset):
+    """
+    Returns damaged image and mask pairs from post-disaster
+    """
+
+    def __init__(self, patch_sz, transforms=None):
+        self.base_path = Path(f"data/{patch_sz}_patches/post-disaster")
+        self.transforms = transforms
+
+        self.pairs = zip(
+            sorted(list((self.base_path / "images").glob("*.png"))),
+            sorted(list((self.base_path / "targets").glob("*.png"))),
+        )
+
+        self.images, self.masks = [
+            x
+            for x in self.pairs
+            if (torch.max(v2.functional.pil_to_tensor(Image.open(x[1]))) > 1)
+        ]
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, index):
+        image = Image.open(self.images[index]).convert("RGB")
+        mask = Image.open(self.masks[index]).convert("L")
+
+        if self.transforms["image"] is not None:
+            image = self.transforms["image"](image)
+
+        if self.transforms["mask"] is not None:
+            mask = self.transforms["mask"](mask)
+
+        return image, mask
+
+
+def get_siamese_loaders(
     patch_sz,
     batch_size,
     num_workers=4,
