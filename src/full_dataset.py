@@ -1,3 +1,7 @@
+"""
+This file contains all the code relating to the dataset, augmentations, and dataloaders.
+"""
+
 import os
 from PIL import Image
 from torch.utils.data import Dataset
@@ -6,6 +10,8 @@ from pathlib import Path
 import torchvision.transforms.v2.functional as TF
 import torch
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
+import random
 
 
 # the class is responsible for knowing where the data is stored
@@ -14,6 +20,7 @@ class SiameseDataset(Dataset):
     Expects a dictionary with "image_transforms" and "mask_transforms".
     The dataset returns PIL images and expects ALL transforms to take place externally.
     """
+
     def __init__(self, patch_sz, transform=None):
         self.base_path = Path(f"data/{patch_sz}_patches")
         self.transform = transform
@@ -46,8 +53,8 @@ class SiameseDataset(Dataset):
 
         if self.transform is not None:
             pre_image = self.transform(pre_image)
-            post_image = self.transform(post_image) # NOT CONSISTENT
-        #what should be transforms, and what should be part of the Dataset?
+            post_image = self.transform(post_image)  # NOT CONSISTENT
+        # what should be transforms, and what should be part of the Dataset?
 
         # don't be too clever for your own good. This works fine.
         label = (
@@ -56,6 +63,83 @@ class SiameseDataset(Dataset):
         # needs to be long to work with any pytorch stuff for some reason
 
         return pre_image, pre_mask, post_image, post_mask, label
+
+
+def get_loaders(
+    patch_sz,
+    batch_size,
+    num_workers=4,
+    pin_memory=True,
+    transforms=None,
+    split=0.9,
+):
+    full_ds = SiameseDataset(patch_sz=patch_sz, transform=transforms)
+    num_train = int(len(full_ds) * split)
+    train_ds, val_ds = torch.utils.data.random_split(
+        full_ds,
+        [num_train, len(full_ds) - num_train],
+    )
+
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=batch_size,
+        num_workers=num_workers,  # TODO look up 'workers'
+        pin_memory=pin_memory,  # TODO look up pin memory
+        shuffle=True,
+        drop_last=True,
+    )
+
+    val_loader = DataLoader(
+        val_ds,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        shuffle=False,
+        drop_last=True,
+    )
+
+    return {"train": train_loader, "val": val_loader}
+
+
+# keep separate
+def get_even_loaders(
+    patch_sz,
+    batch_size,
+    num_workers=4,
+    pin_memory=True,
+    transforms=None,
+    split=0.9,
+):
+    full_ds = SiameseDataset(patch_sz=patch_sz, transform=transforms)
+    damaged_ds = [x for x in full_ds if x[4] == 1]
+    undamaged_ds = [x for x in full_ds if x[4] == 0]
+    undamaged_ds = torch.utils.data.Subset(undamaged_ds, range(len(damaged_ds)))
+    full_ds = torch.utils.data.ConcatDataset([damaged_ds, undamaged_ds])
+    num_train = int(len(full_ds) * split)
+    train_ds, val_ds = torch.utils.data.random_split(
+        full_ds,
+        [num_train, len(full_ds) - num_train],
+    )
+
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=batch_size,
+        num_workers=num_workers,  # TODO look up 'workers'
+        pin_memory=pin_memory,  # TODO look up pin memory
+        shuffle=True,
+        drop_last=True,
+    )
+
+    val_loader = DataLoader(
+        val_ds,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        shuffle=False,
+        drop_last=True,
+    )
+
+    return {"train": train_loader, "val": val_loader}
 
 
 if __name__ == "__main__":

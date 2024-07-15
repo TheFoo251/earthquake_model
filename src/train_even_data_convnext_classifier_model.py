@@ -21,7 +21,7 @@ import logging
 import sys
 
 # other files
-from torch_utils import get_even_loaders
+from full_dataset import get_even_loaders
 from torch_utils import plot_loss_curves
 
 cudnn.benchmark = True

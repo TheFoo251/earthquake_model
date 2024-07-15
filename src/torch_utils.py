@@ -1,7 +1,6 @@
 import torch
 import torchvision
-from full_dataset import SiameseDataset
-from torch.utils.data import DataLoader
+
 import torchvision.transforms.v2 as T
 import torchvision.transforms.v2.functional as TF
 import matplotlib.pyplot as plt
@@ -18,83 +17,6 @@ def save_checkpoint(state, filename):
 def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
-
-
-def get_loaders(
-    patch_sz,
-    batch_size,
-    num_workers=4,
-    pin_memory=True,
-    transforms=None,
-    split=0.9,
-):
-    full_ds = SiameseDataset(patch_sz=patch_sz, transform=transforms)
-    num_train = int(len(full_ds) * split)
-    train_ds, val_ds = torch.utils.data.random_split(
-        full_ds,
-        [num_train, len(full_ds) - num_train],
-    )
-
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=batch_size,
-        num_workers=num_workers,  # TODO look up 'workers'
-        pin_memory=pin_memory,  # TODO look up pin memory
-        shuffle=True,
-        drop_last=True,
-    )
-
-    val_loader = DataLoader(
-        val_ds,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        shuffle=False,
-        drop_last=True,
-    )
-
-    return {"train": train_loader, "val": val_loader}
-
-
-# keep separate
-def get_even_loaders(
-    patch_sz,
-    batch_size,
-    num_workers=4,
-    pin_memory=True,
-    transforms=None,
-    split=0.9,
-):
-    full_ds = SiameseDataset(patch_sz=patch_sz, transform=transforms)
-    damaged_ds = [x for x in full_ds if x[4] == 1]
-    undamaged_ds = [x for x in full_ds if x[4] == 0]
-    undamaged_ds = torch.utils.data.Subset(undamaged_ds, range(len(damaged_ds)))
-    full_ds = torch.utils.data.ConcatDataset([damaged_ds, undamaged_ds])
-    num_train = int(len(full_ds) * split)
-    train_ds, val_ds = torch.utils.data.random_split(
-        full_ds,
-        [num_train, len(full_ds) - num_train],
-    )
-
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=batch_size,
-        num_workers=num_workers,  # TODO look up 'workers'
-        pin_memory=pin_memory,  # TODO look up pin memory
-        shuffle=True,
-        drop_last=True,
-    )
-
-    val_loader = DataLoader(
-        val_ds,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        shuffle=False,
-        drop_last=True,
-    )
-
-    return {"train": train_loader, "val": val_loader}
 
 
 def dice_score(loader, model, device="cuda"):

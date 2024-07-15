@@ -21,7 +21,7 @@ import logging
 import sys
 
 # other files
-from torch_utils import get_loaders, get_even_loaders
+from full_dataset import get_even_loaders
 
 cudnn.benchmark = True
 
