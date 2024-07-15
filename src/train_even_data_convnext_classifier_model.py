@@ -8,6 +8,7 @@ from tqdm import tqdm
 from torchvision.models.convnext import LayerNorm2d
 import math
 import transforms
+from learner import Learner
 
 # other files
 from full_dataset import get_loaders
@@ -21,71 +22,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 PATCH_SZ, BATCH_SZ = 256, 16  # lower batch size?
 
 
-def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):
-    loop = tqdm(loader)  # progress bar wrapped over dataloader
-    model.train(True)
-
-    running_loss = 0.0
-
-    for batch_idx, (_, _, data, _, targets) in enumerate(loop):
-        data, targets = data.to(device=DEVICE), targets.to(device=DEVICE)
-
-        optimizer.zero_grad()  # supposed to be first in this loop
-
-        # forward
-        with torch.cuda.amp.autocast():  # automatically casts as fp16
-            predictions = model(data)
-            loss = loss_fn(predictions, targets)
-
-        # metrics -- these go outside of autograd because they are not computationally intensive
-        running_loss += loss.item()
-
-        # backward (backward -> optimizer step -> scheduler step)
-        scaler.scale(loss).backward()  # backward pass using scaler
-        scaler.step(optimizer)  # optimizer step using scaler
-        scaler.update()  # updates for next iteration
-        scheduler.step()  # has to be after the optimizer step
-
-        # update tqdm loop
-        loop.set_postfix(loss=running_loss / (batch_idx + 1))
-
-    return running_loss / len(loader)
-
-
-def val_one_epoch(loader, model, loss_fn):
-    loop = tqdm(loader)  # progress bar wrapped over dataloader
-    model.eval()
-
-    running_loss = 0.0
-
-    with torch.no_grad():
-        for batch_idx, (_, _, data, _, targets) in enumerate(loop):
-            data, targets = data.to(device=DEVICE), targets.to(device=DEVICE)
-            predictions = model(data)
-            loss = loss_fn(predictions, targets)
-            running_loss += loss.item()
-
-            # update tqdm loop
-            loop.set_postfix(val_loss=running_loss / (batch_idx + 1))
-
-    return running_loss / len(loader)
-
-
 # --- METRICS ---
-
-
-def check_accuracy(loader, model):
-    correct = 0
-    model.eval()
-    with torch.no_grad():
-        for _, _, data, _, targets in loader:
-            data, targets = data.to(DEVICE), targets.to(DEVICE)
-            preds = model(data)
-            correct += torch.sum(targets == torch.argmax(preds, dim=1)).item()
-        accuracy = correct / len(loader.dataset)
-
-    model.train()
-    return accuracy
 
 
 model_weights = models.ConvNeXt_Base_Weights.DEFAULT
@@ -138,33 +75,15 @@ scheduler = lr_scheduler.CosineAnnealingLR(
 
 scaler = torch.cuda.amp.GradScaler()
 
-metrics = {
-    "train_loss": [],
-    "val_loss": [],
-    "train_acc": [],
-    "val_acc": [],
-}
+learner = Learner(
+    model=model,
+    optimizer=optimizer,
+    loss_fn=loss_fn,
+    scaler=scaler,
+    scheduler=scheduler,
+    device=DEVICE,
+)
 
+learner.train_model(num_epochs=NUM_EPOCHS)
 
-# train it!
-for epoch in range(NUM_EPOCHS):
-    print(f"Epoch {epoch+1}/{NUM_EPOCHS}")
-    train_loss = train_one_epoch(
-        dataloaders["train"],
-        model,
-        optimizer,
-        loss_fn,
-        scaler,
-        scheduler=scheduler,
-    )
-    val_loss = val_one_epoch(model=model, loss_fn=loss_fn, loader=dataloaders["val"])
-    train_accuracy = check_accuracy(loader=dataloaders["train"], model=model)
-    val_accuracy = check_accuracy(loader=dataloaders["val"], model=model)
-    metrics["train_loss"].append(train_loss)
-    metrics["val_loss"].append(val_loss)
-    metrics["train_acc"].append(train_accuracy)
-    metrics["val_acc"].append(val_accuracy)
-
-final_accuracy = check_accuracy(loader=dataloaders["val"], model=model)
-print("final accuracy:", final_accuracy)
-plot_loss_curves(metrics)
+plot_loss_curves(learner.metrics)
