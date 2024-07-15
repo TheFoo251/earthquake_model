@@ -44,7 +44,7 @@ class SiameseDataset(Dataset):
         post_image = Image.open(self.post_images[index]).convert("RGB")
         post_mask = Image.open(self.post_masks[index]).convert("L")
 
-        if self.transform is not None:
+        if self.transforms is not None:
             pre_image = self.transforms["image"](pre_image)
             post_image = self.transforms["image"](post_image)
             pre_mask = self.transforms["mask"](pre_mask)
