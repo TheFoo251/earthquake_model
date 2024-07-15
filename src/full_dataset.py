@@ -10,6 +10,10 @@ import torch.nn.functional as F
 
 # the class is responsible for knowing where the data is stored
 class SiameseDataset(Dataset):
+    """
+    Expects a dictionary with "image_transforms" and "mask_transforms".
+    The dataset returns PIL images and expects ALL transforms to take place externally.
+    """
     def __init__(self, patch_sz, transform=None):
         self.base_path = Path(f"data/{patch_sz}_patches")
         self.transform = transform
