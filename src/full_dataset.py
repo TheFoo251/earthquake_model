@@ -2,16 +2,13 @@
 This file contains all the code relating to the dataset, augmentations, and dataloaders.
 """
 
-import os
 from PIL import Image
 from torch.utils.data import Dataset
 import numpy as np
 from pathlib import Path
 from torchvision.transforms import v2
 import torch
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
-import random
 
 
 # the class is responsible for knowing where the data is stored
