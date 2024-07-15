@@ -51,8 +51,9 @@ class SiameseDataset(Dataset):
             post_mask = self.transforms["mask"](post_mask)
 
         # don't be too clever for your own good. This works fine.
+        # this needs to be after the transforms so it reflects the actual, new mask
         label = (
-            torch.max(v2.functional.pil_to_tensor(post_mask)) > 1
+            torch.max(post_mask) > 1 # should be a tensor after transforms
         ).long()  # best practice is to have it be the label number??
         # needs to be long to work with any pytorch stuff for some reason
 
