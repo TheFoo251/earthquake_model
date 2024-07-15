@@ -18,7 +18,7 @@ cudnn.benchmark = True
 NUM_EPOCHS = 30
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-PATCH_SZ, BATCH_SZ = 256, 16 # lower batch size?
+PATCH_SZ, BATCH_SZ = 256, 16  # lower batch size?
 
 
 def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):
@@ -43,11 +43,11 @@ def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):
         # backward (backward -> optimizer step -> scheduler step)
         scaler.scale(loss).backward()  # backward pass using scaler
         scaler.step(optimizer)  # optimizer step using scaler
-        scheduler.step()
+        scaler.update()  # updates for next iteration
+        scheduler.step()  # has to be after the optimizer step
 
         # update tqdm loop
         loop.set_postfix(loss=running_loss / (batch_idx + 1))
-
 
     return running_loss / len(loader)
 
@@ -89,7 +89,7 @@ def check_accuracy(loader, model):
 
 
 model_weights = models.ConvNeXt_Base_Weights.DEFAULT
-dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=transforms.CONVNEXT, split=0.7)
+dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=transforms.CONVNEXT, split=0.8)
 
 
 lr = 9e-6  # from optimizer study, close to 1e-5
@@ -126,10 +126,15 @@ model = model.to(DEVICE)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.AdamW(model.parameters(), lr=lr)
 
+
 # Decay LR by a factor of 0.1 every 7 epochs
 scheduler = lr_scheduler.CosineAnnealingLR(
-    optimizer, T_max=math.floor(len(dataloaders["train"]) / BATCH_SZ)
+    optimizer,
+    T_max=math.floor(
+        len(dataloaders["train"]) / BATCH_SZ
+    ),  # updates each batch, each epoch...
 )
+
 
 scaler = torch.cuda.amp.GradScaler()
 
