@@ -43,10 +43,10 @@ def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):
         # backward (backward -> optimizer step -> scheduler step)
         scaler.scale(loss).backward()  # backward pass using scaler
         scaler.step(optimizer)  # optimizer step using scaler
+        scheduler.step()
 
         # update tqdm loop
         loop.set_postfix(loss=running_loss / (batch_idx + 1))
-    scheduler.step()
 
 
     return running_loss / len(loader)
