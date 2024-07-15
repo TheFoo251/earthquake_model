@@ -5,7 +5,7 @@ from torchvision import models
 
 # matches https://pytorch.org/vision/main/models/generated/torchvision.models.convnext_base.html#torchvision.models.ConvNeXt_Base_Weights
 CONVNEXT = {
-    "image": models.ConvNeXt_Base_Weights.IMAGENET1K_V1.transforms(),
+    "image": models.ConvNeXt_Base_Weights.DEFAULT.transforms(),
     "mask": v2.Compose(
         [
             v2.ToImage(),
