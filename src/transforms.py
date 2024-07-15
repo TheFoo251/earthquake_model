@@ -1,6 +1,5 @@
 from torchvision.transforms import v2
 import torch
-import torchvision
 from torchvision import models
 
 # matches https://pytorch.org/vision/main/models/generated/torchvision.models.convnext_base.html#torchvision.models.ConvNeXt_Base_Weights

@@ -44,16 +44,10 @@ def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):
         scaler.scale(loss).backward()  # backward pass using scaler
         scaler.step(optimizer)  # optimizer step using scaler
 
-        old_scaler = scaler.get_scale()
-        scaler.update()  # updates for next iteration
-        new_scaler = scaler.get_scale()
-        if (
-            new_scaler >= old_scaler
-        ):  # handle scaler so scheduler doesn't get out of wack
-            scheduler.step()  # has to be after the optimizer step
-
         # update tqdm loop
         loop.set_postfix(loss=running_loss / (batch_idx + 1))
+    scheduler.step()
+
 
     return running_loss / len(loader)
 
@@ -95,7 +89,7 @@ def check_accuracy(loader, model):
 
 
 model_weights = models.ConvNeXt_Base_Weights.DEFAULT
-dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=transforms.CONVNEXT)
+dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=transforms.CONVNEXT, split=0.7)
 
 
 lr = 9e-6  # from optimizer study, close to 1e-5
