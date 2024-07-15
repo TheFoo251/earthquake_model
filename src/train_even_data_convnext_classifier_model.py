@@ -43,8 +43,14 @@ def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):
         # backward (backward -> optimizer step -> scheduler step)
         scaler.scale(loss).backward()  # backward pass using scaler
         scaler.step(optimizer)  # optimizer step using scaler
+
+        old_scaler = scaler.get_scale()
         scaler.update()  # updates for next iteration
-        scheduler.step()  # has to be after the optimizer step
+        new_scaler = scaler.get_scale()
+        if (
+            new_scaler >= old_scaler
+        ):  # handle scaler so scheduler doesn't get out of wack
+            scheduler.step()  # has to be after the optimizer step
 
         # update tqdm loop
         loop.set_postfix(loss=running_loss / (batch_idx + 1))

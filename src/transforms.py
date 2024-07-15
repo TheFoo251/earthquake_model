@@ -6,7 +6,7 @@ from torchvision import models
 # matches https://pytorch.org/vision/main/models/generated/torchvision.models.convnext_base.html#torchvision.models.ConvNeXt_Base_Weights
 CONVNEXT = {
     "image": models.ConvNeXt_Base_Weights.DEFAULT.transforms(),
-    "mask": None,  # don't need any
+    "mask": v2.ToImage(),  # don't really need any
 }
 
 # currently, this can't have any randomness, or the image/mask don't match anymore
