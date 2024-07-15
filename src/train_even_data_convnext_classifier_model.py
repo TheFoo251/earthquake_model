@@ -18,7 +18,7 @@ cudnn.benchmark = True
 NUM_EPOCHS = 30
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-PATCH_SZ, BATCH_SZ = 256, 32
+PATCH_SZ, BATCH_SZ = 256, 16 # lower batch size?
 
 
 def train_one_epoch(loader, model, optimizer, loss_fn, scaler, scheduler):

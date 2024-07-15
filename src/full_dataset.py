@@ -44,18 +44,21 @@ class SiameseDataset(Dataset):
         post_image = Image.open(self.post_images[index]).convert("RGB")
         post_mask = Image.open(self.post_masks[index]).convert("L")
 
-        if self.transforms is not None:
-            pre_image = self.transforms["image"](pre_image)
-            post_image = self.transforms["image"](post_image)
-            pre_mask = self.transforms["mask"](pre_mask)
-            post_mask = self.transforms["mask"](post_mask)
-
         # don't be too clever for your own good. This works fine.
-        # this needs to be after the transforms so it reflects the actual, new mask
+        # needs to be before transforms to reflect actual truth
         label = (
-            torch.max(post_mask) > 1 # should be a tensor after transforms
+            torch.max(v2.functional.pil_to_tensor(post_mask))
+            > 1  # should be a tensor after transforms
         ).long()  # best practice is to have it be the label number??
         # needs to be long to work with any pytorch stuff for some reason
+
+        if self.transforms["image"] is not None:
+            pre_image = self.transforms["image"](pre_image)
+            post_image = self.transforms["image"](post_image)
+
+        if self.transforms["mask"] is not None:
+            pre_mask = self.transforms["mask"](pre_mask)
+            post_mask = self.transforms["mask"](post_mask)
 
         return pre_image, pre_mask, post_image, post_mask, label
 
