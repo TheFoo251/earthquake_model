@@ -7,7 +7,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 import numpy as np
 from pathlib import Path
-import torchvision.transforms.v2.functional as TF
+from torchvision.transforms import v2
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -23,7 +23,7 @@ class SiameseDataset(Dataset):
 
     def __init__(self, patch_sz, transforms=None):
         self.base_path = Path(f"data/{patch_sz}_patches")
-        self.transform = transforms
+        self.transforms = transforms
 
         self.pre_images = sorted(
             list((self.base_path / "pre-disaster" / "images").glob("*.png"))
@@ -42,27 +42,42 @@ class SiameseDataset(Dataset):
         return len(self.post_images)
 
     def __getitem__(self, index):
-        pre_image = TF.pil_to_tensor(
-            Image.open(self.pre_images[index]).convert("RGB")
-        ).float()
-        pre_mask = TF.pil_to_tensor(Image.open(self.pre_masks[index]).convert("L"))
-        post_image = TF.pil_to_tensor(
-            Image.open(self.post_images[index]).convert("RGB"),
-        ).float()  # when should it become a float? Here or the transforms?
-        post_mask = TF.pil_to_tensor(Image.open(self.post_masks[index]).convert("L"))
+        pre_image = Image.open(self.pre_images[index]).convert("RGB")
+        pre_mask = Image.open(self.pre_masks[index]).convert("L")
+        post_image = Image.open(self.post_images[index]).convert("RGB")
+        post_mask = Image.open(self.post_masks[index]).convert("L")
 
         if self.transform is not None:
-            pre_image = self.transform(pre_image)
-            post_image = self.transform(post_image)  # NOT CONSISTENT
-        # what should be transforms, and what should be part of the Dataset?
+            pre_image = self.transforms["image"](pre_image)
+            post_image = self.transforms["image"](post_image)
+            pre_mask = self.transforms["mask"](pre_mask)
+            post_mask = self.transforms["mask"](post_mask)
 
         # don't be too clever for your own good. This works fine.
         label = (
-            torch.max(post_mask) > 1
+            torch.max(v2.functional.pil_to_tensor(post_mask)) > 1
         ).long()  # best practice is to have it be the label number??
         # needs to be long to work with any pytorch stuff for some reason
 
         return pre_image, pre_mask, post_image, post_mask, label
+
+
+# currently, this can't have any randomness, or the image/mask don't match anymore
+convnext_transforms = {
+    "image": v2.Compose(
+        [
+            v2.Resize(224),
+            v2.PILToTensor(),
+            v2.ToDtype(torch.float32, scale=True),
+        ]
+    ),
+    "mask": v2.Compose(
+        [
+            v2.Resize(224),
+            v2.PILToTensor(),
+        ]
+    ),
+}
 
 
 def get_loaders(
@@ -70,7 +85,7 @@ def get_loaders(
     batch_size,
     num_workers=4,
     pin_memory=True,
-    transforms=None,
+    transforms=convnext_transforms,
     split=0.9,
     even=True,
 ):
