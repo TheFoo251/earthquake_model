@@ -9,6 +9,7 @@ from pathlib import Path
 from torchvision.transforms import v2
 import torch
 from torch.utils.data import DataLoader
+import random
 
 
 # the class is responsible for knowing where the data is stored
@@ -16,9 +17,10 @@ class SiameseDataset(Dataset):
     """
     Expects a dictionary with "image_transforms" and "mask_transforms".
     The dataset returns PIL images and expects ALL transforms to take place externally.
+    Labels are returned as long ints.
     """
 
-    def __init__(self, patch_sz, transforms=None):
+    def __init__(self, patch_sz, transforms=None, even=True):
         self.base_path = Path(f"data/{patch_sz}_patches")
         self.transforms = transforms
 
@@ -35,38 +37,61 @@ class SiameseDataset(Dataset):
             list((self.base_path / "post-disaster" / "targets").glob("*.png"))
         )
 
-        # probably better... refactor later
-        # self.labels = [(torch.max(v2.functional.pil_to_tensor(mask)) > 1) for mask in self.masks]
+        self.labels = [
+            (np.max(np.asarray(Image.open(mask).convert("L"))) > 1).item()
+            for mask in self.post_masks
+        ]
+
+        if even:
+            self.all_data = list(
+                zip(
+                    self.pre_images,
+                    self.pre_masks,
+                    self.post_images,
+                    self.post_masks,
+                    self.labels,
+                )
+            )
+            damaged_data = [x for x in self.all_data if x[4]]
+            undamaged_data = [x for x in self.all_data if not x[4]]
+
+            undersampled_undamaged_data = random.sample(
+                undamaged_data, k=len(damaged_data)
+            )
+            self.all_data = damaged_data + undersampled_undamaged_data
+
+            (
+                self.pre_images,
+                self.pre_masks,
+                self.post_images,
+                self.post_masks,
+                self.labels,
+            ) = zip(*self.all_data)
+            # unzip
 
     def __len__(self):
-        return len(self.post_images)
+        return len(self.labels)
 
     def __getitem__(self, index):
         pre_image = Image.open(self.pre_images[index]).convert("RGB")
         pre_mask = Image.open(self.pre_masks[index]).convert("L")
         post_image = Image.open(self.post_images[index]).convert("RGB")
         post_mask = Image.open(self.post_masks[index]).convert("L")
+        label = torch.tensor(self.labels[index], dtype=torch.long)
 
-        # don't be too clever for your own good. This works fine.
-        # needs to be before transforms to reflect actual truth
-        label = (
-            torch.max(v2.functional.pil_to_tensor(post_mask))
-            > 1  # should be a tensor after transforms
-        ).long()  # best practice is to have it be the label number??
-        # needs to be long to work with any pytorch stuff for some reason
+        if self.transforms is not None:
+            if self.transforms["image"] is not None:
+                pre_image = self.transforms["image"](pre_image)
+                post_image = self.transforms["image"](post_image)
 
-        if self.transforms["image"] is not None:
-            pre_image = self.transforms["image"](pre_image)
-            post_image = self.transforms["image"](post_image)
-
-        if self.transforms["mask"] is not None:
-            pre_mask = self.transforms["mask"](pre_mask)
-            post_mask = self.transforms["mask"](post_mask)
+            if self.transforms["mask"] is not None:
+                pre_mask = self.transforms["mask"](pre_mask)
+                post_mask = self.transforms["mask"](post_mask)
 
         return pre_image, pre_mask, post_image, post_mask, label
 
 
-class DamagedOnly(Dataset):
+class DamagedOnlyDataset(Dataset):
     """
     Returns damaged image and mask pairs from post-disaster
     """
@@ -80,11 +105,13 @@ class DamagedOnly(Dataset):
             sorted(list((self.base_path / "targets").glob("*.png"))),
         )
 
-        self.images, self.masks = [
-            x
-            for x in self.pairs
-            if (torch.max(v2.functional.pil_to_tensor(Image.open(x[1]))) > 1)
-        ]
+        self.images, self.masks = zip(
+            *[  # basically just unzip
+                x
+                for x in self.pairs
+                if (torch.max(v2.functional.pil_to_tensor(Image.open(x[1]))) > 1)
+            ]
+        )
 
     def __len__(self):
         return len(self.images)
@@ -93,30 +120,25 @@ class DamagedOnly(Dataset):
         image = Image.open(self.images[index]).convert("RGB")
         mask = Image.open(self.masks[index]).convert("L")
 
-        if self.transforms["image"] is not None:
-            image = self.transforms["image"](image)
-
-        if self.transforms["mask"] is not None:
-            mask = self.transforms["mask"](mask)
+        if self.transforms is not None:
+            if self.transforms["image"] is not None:
+                image = self.transforms["image"](image)
+            if self.transforms["mask"] is not None:
+                mask = self.transforms["mask"](mask)
 
         return image, mask
 
 
-def get_siamese_loaders(
-    patch_sz,
+def get_loaders(
     batch_size,
     num_workers=4,
     pin_memory=True,
-    transforms=None,
     split=0.9,
-    even=True,
+    full_ds=None,
 ):
-    full_ds = SiameseDataset(patch_sz=patch_sz, transforms=transforms)
-    if even:
-        damaged_ds = [x for x in full_ds if x[4] == 1]
-        undamaged_ds = [x for x in full_ds if x[4] == 0]
-        undamaged_ds = torch.utils.data.Subset(undamaged_ds, range(len(damaged_ds)))
-        full_ds = torch.utils.data.ConcatDataset([damaged_ds, undamaged_ds])
+    """
+    Requires you pass in an already instantiated dataset with its own transforms
+    """
     num_train = int(len(full_ds) * split)
     train_ds, val_ds = torch.utils.data.random_split(
         full_ds,
@@ -145,16 +167,16 @@ def get_siamese_loaders(
 
 
 if __name__ == "__main__":
-    ds = SiameseDataset(patch_sz=256)
-    damaged_data = [x for x in ds if x[4] == 1]
-    undamaged_data = [x for x in ds if x[4] == 0]
-    print("number of damaged instances: ", len(damaged_data))  # 147
-    print("number of undamaged instances: ", len(undamaged_data))  # 2941
+    uneven_ds = SiameseDataset(patch_sz=256, even=False)
+    damaged_data = [x for x in uneven_ds if x[4] == 1]
+    undamaged_data = [x for x in uneven_ds if x[4] == 0]
+    even_ds = SiameseDataset(patch_sz=256, even=True)
+    assert len(damaged_data) * 2 == len(even_ds)
 
     from torch_utils import imshow
 
-    ex = ds[0]
+    ex = damaged_data[0]
     labels = ["No Damage", "Damaged"]
     print(ex[4])
     # print(ds[0][:])
-    imshow(list(ex[0:4]), title=labels[ex[4].item()])
+    imshow(list(ex[:4]), title=labels[ex[4].item()])

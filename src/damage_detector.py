@@ -10,7 +10,7 @@ import math
 import transforms
 
 # other files
-from full_dataset import get_siamese_loaders
+from full_dataset import SiameseDataset, get_loaders
 from torch_utils import plot_loss_curves
 
 cudnn.benchmark = True
@@ -119,9 +119,8 @@ class Learner:
 
 
 model_weights = models.ConvNeXt_Base_Weights.DEFAULT
-dataloaders = get_siamese_loaders(
-    PATCH_SZ, BATCH_SZ, transforms=transforms.CONVNEXT, split=0.8
-)
+dataset = SiameseDataset(patch_sz=PATCH_SZ, transforms=transforms.CONVNEXT, even=True)
+dataloaders = get_loaders(full_ds=dataset, batch_size=BATCH_SZ, split=0.8)
 
 
 lr = 9e-6  # from optimizer study, close to 1e-5

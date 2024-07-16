@@ -13,7 +13,7 @@ import logging
 import sys
 
 # other files
-from full_dataset import get_siamese_loaders
+from full_dataset import get_loaders
 import transforms
 
 cudnn.benchmark = True
@@ -118,7 +118,7 @@ def check_accuracy(loader, model):
 # --- objective ---
 
 model_weights = models.ConvNeXt_Base_Weights.DEFAULT
-dataloaders = get_siamese_loaders(PATCH_SZ, BATCH_SZ, transforms=transforms.CONVNEXT)
+dataloaders = get_loaders(PATCH_SZ, BATCH_SZ, transforms=transforms.CONVNEXT)
 
 
 def objective(trial):
