@@ -180,3 +180,8 @@ if __name__ == "__main__":
     print(ex[4])
     # print(ds[0][:])
     imshow(list(ex[:4]), title=labels[ex[4].item()])
+
+    ex = even_ds[0]
+    print(ex[4])
+    # print(ds[0][:])
+    imshow(list(ex[:4]), title=labels[ex[4].item()])
