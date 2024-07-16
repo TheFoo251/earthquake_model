@@ -93,7 +93,9 @@ class SiameseDataset(Dataset):
 
 class DamagedOnlyDataset(Dataset):
     """
-    Returns damaged image and mask pairs from post-disaster
+    Returns damaged image and mask pairs from post-disaster.
+    This dataset does not process the masks lazily, they're already all loaded when
+    the dataset is instantiated. It does process the images lazily.
     """
 
     def __init__(self, patch_sz, transforms=None):
