@@ -13,9 +13,10 @@ import optuna
 from optuna.integration import PyTorchLightningPruningCallback
 import logging
 import sys
+import torch_utils
 
-OPTIMIZE = True
-ENCODER = "resnet18"
+OPTIMIZE = False
+ENCODER = "resnet50"
 PRETRAINING = "imagenet"
 EPOCHS = 5
 NUM_TRIALS = 20
@@ -68,16 +69,17 @@ class MyModel(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         image, mask = batch
-        pred_mask = self.model(image)
-        loss = self.loss_fn(pred_mask, mask)
+        logits_pred_mask = self.model(image)
+        loss = self.loss_fn(logits_pred_mask, mask)
 
-        # compatibility
-        pred_mask_probs = torch.softmax(pred_mask, dim=1)
-        pred_mask = torch.argmax(pred_mask_probs, dim=1)
-        mask = mask.squeeze(1)
+        # mask from logits
+        pred_mask = (logits_pred_mask.sigmoid() > 0.5).float()
+
         self.train_dice(pred_mask, mask)
-        self.log("train_dice", self.train_dice, on_step=True, on_epoch=False)
-
+        self.log(
+            "train_dice", self.train_dice, on_step=True, on_epoch=False, prog_bar=True
+        )
+        self.log("train_loss", loss, prog_bar=True)
         return loss
 
     def configure_optimizers(self):
@@ -87,17 +89,22 @@ class MyModel(L.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         image, mask = batch
-        pred_mask = self.model(image)
-        val_loss = self.loss_fn(pred_mask, mask)
+        logits_pred_mask = self.model(image)
+        val_loss = self.loss_fn(logits_pred_mask, mask)
 
-        # compatibility
-        pred_mask_probs = torch.softmax(pred_mask, dim=1)
-        pred_mask = torch.argmax(pred_mask_probs, dim=1)
-        mask = mask.squeeze(1)
+        # mask from logits
+        pred_mask = (logits_pred_mask.sigmoid() > 0.5).float()
+
         self.val_dice(pred_mask, mask)
 
         self.log("val_dice", self.val_dice, on_step=True, on_epoch=True)
         self.log("val_loss", val_loss)
+
+    def predict_step(self, batch, batch_idx):
+        image, _ = batch
+        logits_pred_mask = self.model(image)
+        pred_mask = (logits_pred_mask.sigmoid() > 0.5).float()
+        return pred_mask
 
 
 def objective(trial: optuna.trial.Trial) -> float:
@@ -153,7 +160,7 @@ if __name__ == "__main__":
 
     else:
         model = MyModel(
-            lr=1e-5,
+            lr=1e-3,
             arch="unet",
             encoder_name=ENCODER,
             in_channels=3,
@@ -161,9 +168,27 @@ if __name__ == "__main__":
             decoder_attention_type="scse",
         )
 
-        trainer = L.Trainer(max_epochs=EPOCHS)
-        trainer.fit(
-            model=model,
-            train_dataloaders=DATALOADERS["train"],
-            val_dataloaders=DATALOADERS["val"],
-        )
+        trainer = L.Trainer(max_epochs=EPOCHS, log_every_n_steps=1)
+        # trainer.fit(
+        #     model=model,
+        #     train_dataloaders=DATALOADERS["train"],
+        #     val_dataloaders=DATALOADERS["val"],
+        # )
+
+        predictions = trainer.predict(
+            dataloaders=DATALOADERS["val"], model=model
+        )  # list of batches
+        print(torch.max(predictions[0][0]))
+        print(predictions[0][0].shape)
+        predictions = torch.cat(
+            predictions
+        ).float()  # make it one giant tensor, and convert type
+        predictions = torch.split(
+            predictions, split_size_or_sections=1
+        )  # split into samples
+        predictions = list(
+            map(torch.squeeze, predictions)
+        )  # split into squeezed samples
+
+        # print(predictions[0])
+        torch_utils.imshow(imgs=predictions[:4])  # just take 4
