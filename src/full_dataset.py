@@ -109,16 +109,23 @@ class DamagedOnlyDataset(Dataset):
             *[  # basically just unzip
                 x
                 for x in self.pairs
-                if (torch.max(v2.functional.pil_to_tensor(Image.open(x[1]))) > 1)
+                if (np.max(np.asarray(Image.open(x[1]).convert("L"))) > 1)
             ]
         )
+
+        # get only damage
+        self.masks = [np.asarray(Image.open(x)) for x in self.masks]  # open arrays
+        self.masks = [x > 1 for x in self.masks]  # make masks
+        self.masks = [
+            Image.fromarray(x, mode="L") for x in self.masks
+        ]  # make images again
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, index):
         image = Image.open(self.images[index]).convert("RGB")
-        mask = Image.open(self.masks[index]).convert("L")
+        mask = self.masks[index]  # already an image...
 
         if self.transforms is not None:
             if self.transforms["image"] is not None:
@@ -185,3 +192,7 @@ if __name__ == "__main__":
     print(ex[4])
     # print(ds[0][:])
     imshow(list(ex[:4]), title=labels[ex[4].item()])
+
+    damage_only_ds = DamagedOnlyDataset(patch_sz=256)
+    ex = damage_only_ds[4]
+    imshow(list(ex))
