@@ -96,6 +96,8 @@ class DamagedOnlyDataset(Dataset):
     Returns damaged image and mask pairs from post-disaster.
     This dataset does not process the masks lazily, they're already all loaded when
     the dataset is instantiated. It does process the images lazily.
+
+    Contains attribute "alpha", which is the ratio of positive pixels to total pixels for the dataset.
     """
 
     def __init__(self, patch_sz, transforms=None):
@@ -118,9 +120,15 @@ class DamagedOnlyDataset(Dataset):
         # get only damage
         self.masks = [np.asarray(Image.open(x)) for x in self.masks]  # open arrays
         self.masks = [x > 1 for x in self.masks]  # make masks
-        self.masks = [
-            Image.fromarray(x, mode="L") for x in self.masks
-        ]  # make images again
+
+        # calculate alpha
+        all_masks = np.concatenate(self.masks)
+        positive_pixels = np.sum(all_masks).item()
+        all_pixels = np.size(all_masks)
+        self.alpha = positive_pixels / all_pixels
+
+        # make masks images again
+        self.masks = [Image.fromarray(x, mode="L") for x in self.masks]
 
     def __len__(self):
         return len(self.images)
@@ -198,3 +206,7 @@ if __name__ == "__main__":
     damage_only_ds = DamagedOnlyDataset(patch_sz=256)
     ex = damage_only_ds[4]
     imshow(list(ex))
+
+    imshow(list(damage_only_ds.masks)[:4])
+
+    print(damage_only_ds.alpha)

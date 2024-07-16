@@ -20,6 +20,7 @@ ENCODER = "resnet50"
 PRETRAINING = "imagenet"
 EPOCHS = 5
 NUM_TRIALS = 20
+BATCH_SZ = 16
 
 
 params = get_preprocessing_params(encoder_name=ENCODER, pretrained=PRETRAINING)
@@ -49,7 +50,7 @@ transforms = {
 
 # same for ery-body
 DATASET = DamagedOnlyDataset(patch_sz=256, transforms=transforms)
-DATALOADERS = get_loaders(16, split=0.7, full_ds=DATASET)
+DATALOADERS = get_loaders(BATCH_SZ, split=0.7, full_ds=DATASET)
 
 
 class MyModel(L.LightningModule):
@@ -62,7 +63,11 @@ class MyModel(L.LightningModule):
             classes=out_classes,
             **kwargs
         )
-        self.loss_fn = smp.losses.DiceLoss(smp.losses.BINARY_MODE, from_logits=True)
+        # self.loss_fn = smp.losses.DiceLoss(smp.losses.BINARY_MODE, from_logits=True)
+        # self.loss_fn = smp.losses.LovaszLoss(smp.losses.BINARY_MODE, from_logits=True)
+        self.loss_fn = smp.losses.FocalLoss(
+            smp.losses.BINARY_MODE, alpha=DATASET.alpha, from_logits=True
+        )
         self.train_dice = torchmetrics.segmentation.GeneralizedDiceScore(num_classes=1)
         self.val_dice = torchmetrics.segmentation.GeneralizedDiceScore(num_classes=1)
         self.lr = lr
@@ -160,7 +165,7 @@ if __name__ == "__main__":
 
     else:
         model = MyModel(
-            lr=1e-3,
+            lr=1e-4,
             arch="unet",
             encoder_name=ENCODER,
             in_channels=3,
@@ -169,26 +174,15 @@ if __name__ == "__main__":
         )
 
         trainer = L.Trainer(max_epochs=EPOCHS, log_every_n_steps=1)
-        # trainer.fit(
-        #     model=model,
-        #     train_dataloaders=DATALOADERS["train"],
-        #     val_dataloaders=DATALOADERS["val"],
-        # )
+        trainer.fit(
+            model=model,
+            train_dataloaders=DATALOADERS["train"],
+            val_dataloaders=DATALOADERS["val"],
+        )
 
-        predictions = trainer.predict(
-            dataloaders=DATALOADERS["val"], model=model
-        )  # list of batches
-        print(torch.max(predictions[0][0]))
-        print(predictions[0][0].shape)
-        predictions = torch.cat(
-            predictions
-        ).float()  # make it one giant tensor, and convert type
-        predictions = torch.split(
-            predictions, split_size_or_sections=1
-        )  # split into samples
-        predictions = list(
-            map(torch.squeeze, predictions)
-        )  # split into squeezed samples
+        predictions = trainer.predict(dataloaders=DATALOADERS["val"], model=model)
+        predictions = torch.cat(predictions).float()
+        predictions = torch.split(predictions, split_size_or_sections=1)
+        predictions = list(map(torch.squeeze, predictions))
 
-        # print(predictions[0])
-        torch_utils.imshow(imgs=predictions[:4])  # just take 4
+        torch_utils.imshow(imgs=predictions[:4])
