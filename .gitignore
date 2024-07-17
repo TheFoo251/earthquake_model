@@ -1,6 +1,6 @@
 #just the data folder(s)
 #paths are only checked if you use /
-data/
+data
 models
 model_checkpoints
 __pycache__
