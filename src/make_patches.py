@@ -1,8 +1,8 @@
 # coding: utf-8
-from fastai.data.all import *
 from patchify import patchify
 from PIL import Image
-from tqdm import tqdm
+from pathlib import Path
+import numpy as np
 
 
 # simpler implementation, more readable if perhaps less dry...
