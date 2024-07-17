@@ -57,7 +57,7 @@ def save_predictions_as_imgs(loader, model, folder="saved_images/", device="cuda
     model.train()
 
 
-def imshow(imgs, title=None):
+def imshow(imgs, title=None, show_colorbar=False):
     """Plot tensors or PIL images as images. Can mix and match types."""
     if not isinstance(imgs, list):
         imgs = [imgs]
@@ -66,10 +66,12 @@ def imshow(imgs, title=None):
         if torch.is_tensor(img):
             img = img.detach()
             img = TF.to_pil_image(img)
-        axs[0, i].imshow(np.asarray(img))
+        im = axs[0, i].imshow(np.asarray(img))
         axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
         if title is not None:
             plt.title(title)
+        if show_colorbar:
+            cbar = fig.colorbar(im, ax=axs[0, i])
     plt.ioff()
     plt.show()
 

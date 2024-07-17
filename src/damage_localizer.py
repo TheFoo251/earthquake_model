@@ -16,9 +16,9 @@ import sys
 import torch_utils
 
 OPTIMIZE = False
-ENCODER = "resnet50"
+ENCODER = "resnet18"
 PRETRAINING = "imagenet"
-EPOCHS = 5
+EPOCHS = 30
 NUM_TRIALS = 20
 BATCH_SZ = 16
 
@@ -30,17 +30,17 @@ transforms = {
     "image": v2.Compose(
         [
             v2.ToImage(),
-            v2.Resize(224),
+            # v2.Resize(224),
             v2.ToDtype(torch.float32, scale=True),  # scale images to [0.0, 1.0]
-            v2.Normalize(
-                mean=params["mean"], std=params["std"]
-            ),  # make sure to normalize to match ConvNext
+            # v2.Normalize(
+            #     mean=params["mean"], std=params["std"]
+            # ),  # make sure to normalize to match ConvNext
         ]
     ),
     "mask": v2.Compose(
         [
             v2.ToImage(),
-            v2.Resize(224),
+            # v2.Resize(224),
             v2.ToDtype(
                 torch.long, scale=False
             ),  # make sure to turn off scaling for mask
@@ -65,9 +65,12 @@ class MyModel(L.LightningModule):
         )
         # self.loss_fn = smp.losses.DiceLoss(smp.losses.BINARY_MODE, from_logits=True)
         # self.loss_fn = smp.losses.LovaszLoss(smp.losses.BINARY_MODE, from_logits=True)
-        self.loss_fn = smp.losses.FocalLoss(
-            smp.losses.BINARY_MODE, alpha=DATASET.alpha, from_logits=True
-        )
+        # self.loss_fn = smp.losses.FocalLoss(
+        #     smp.losses.BINARY_MODE,
+        #     # alpha=DATASET.alpha,
+        #     gamma=4,
+        # )
+        self.loss_fn = smp.losses.SoftBCEWithLogitsLoss()
         self.train_dice = torchmetrics.segmentation.GeneralizedDiceScore(num_classes=1)
         self.val_dice = torchmetrics.segmentation.GeneralizedDiceScore(num_classes=1)
         self.lr = lr
@@ -114,11 +117,11 @@ class MyModel(L.LightningModule):
 
 def objective(trial: optuna.trial.Trial) -> float:
 
-    lr = trial.suggest_float("learning_rate", 1e-6, 1e-2)
+    lr = trial.suggest_float("learning_rate", 1e-4, 1e-2)
 
     model = MyModel(
         lr=lr,
-        arch="unet",
+        arch="deeplabv3+",
         encoder_name=ENCODER,
         in_channels=3,
         out_classes=1,
@@ -170,7 +173,6 @@ if __name__ == "__main__":
             encoder_name=ENCODER,
             in_channels=3,
             out_classes=1,
-            decoder_attention_type="scse",
         )
 
         trainer = L.Trainer(max_epochs=EPOCHS, log_every_n_steps=1)

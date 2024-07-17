@@ -204,9 +204,9 @@ if __name__ == "__main__":
     imshow(list(ex[:4]), title=labels[ex[4].item()])
 
     damage_only_ds = DamagedOnlyDataset(patch_sz=256)
-    ex = damage_only_ds[4]
+    ex = damage_only_ds[0]
     imshow(list(ex))
 
-    imshow(list(damage_only_ds.masks)[:4])
+    # imshow(list(damage_only_ds.masks)[:4])
 
     print(damage_only_ds.alpha)
