@@ -14,9 +14,10 @@ from optuna.integration import PyTorchLightningPruningCallback
 import logging
 import sys
 import torch_utils
+import timm
 
 OPTIMIZE = False
-ENCODER = "resnet18"
+ENCODER = "resnet50"
 PRETRAINING = "imagenet"
 EPOCHS = 30
 NUM_TRIALS = 20
@@ -53,16 +54,27 @@ DATASET = DamagedOnlyDataset(patch_sz=256, transforms=transforms)
 DATALOADERS = get_loaders(BATCH_SZ, split=0.7, full_ds=DATASET)
 
 
+print(timm.list_models(pretrained=True))
+model = timm.create_model(
+    model_name="my-cool-timm-model-3", pretrained=True, num_classes=1
+)
+data_cfg = timm.data.resolve_data_config(model.pretrained_cfg)
+transforms = timm.data.create_transform(**data_cfg)
+
+# model = smp.create_model(
+#     arch,
+#     encoder_name=encoder_name,
+#     in_channels=in_channels,
+#     classes=out_classes,
+#     **kwargs
+# )
+
+
 class MyModel(L.LightningModule):
-    def __init__(self, lr, arch, encoder_name, in_channels, out_classes, **kwargs):
+    def __init__(self, lr, model):
         super().__init__()
-        self.model = smp.create_model(
-            arch,
-            encoder_name=encoder_name,
-            in_channels=in_channels,
-            classes=out_classes,
-            **kwargs
-        )
+        self.model = model
+
         # self.loss_fn = smp.losses.DiceLoss(smp.losses.BINARY_MODE, from_logits=True)
         # self.loss_fn = smp.losses.LovaszLoss(smp.losses.BINARY_MODE, from_logits=True)
         # self.loss_fn = smp.losses.FocalLoss(
@@ -78,7 +90,7 @@ class MyModel(L.LightningModule):
     def training_step(self, batch, batch_idx):
         image, mask = batch
         logits_pred_mask = self.model(image)
-        loss = self.loss_fn(logits_pred_mask, mask)
+        loss = self.loss_fn(logits_pred_mask, mask.float())
 
         # mask from logits
         pred_mask = (logits_pred_mask.sigmoid() > 0.5).float()
@@ -98,7 +110,7 @@ class MyModel(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         image, mask = batch
         logits_pred_mask = self.model(image)
-        val_loss = self.loss_fn(logits_pred_mask, mask)
+        val_loss = self.loss_fn(logits_pred_mask, mask.float())
 
         # mask from logits
         pred_mask = (logits_pred_mask.sigmoid() > 0.5).float()
@@ -115,39 +127,39 @@ class MyModel(L.LightningModule):
         return pred_mask
 
 
-def objective(trial: optuna.trial.Trial) -> float:
+# def objective(trial: optuna.trial.Trial) -> float:
 
-    lr = trial.suggest_float("learning_rate", 1e-4, 1e-2)
+#     lr = trial.suggest_float("learning_rate", 1e-4, 1e-2)
 
-    model = MyModel(
-        lr=lr,
-        arch="deeplabv3+",
-        encoder_name=ENCODER,
-        in_channels=3,
-        out_classes=1,
-        decoder_attention_type="scse",
-    )
+#     model = MyModel(
+#         lr=lr,
+#         arch="deeplabv3+",
+#         encoder_name=ENCODER,
+#         in_channels=3,
+#         out_classes=1,
+#         decoder_attention_type="scse",
+#     )
 
-    trainer = L.Trainer(
-        logger=True,
-        enable_checkpointing=False,
-        max_epochs=EPOCHS,
-        accelerator="auto",
-        callbacks=[
-            PyTorchLightningPruningCallback(trial, monitor="val_dice"),
-        ],
-    )
+#     trainer = L.Trainer(
+#         logger=True,
+#         enable_checkpointing=False,
+#         max_epochs=EPOCHS,
+#         accelerator="auto",
+#         callbacks=[
+#             PyTorchLightningPruningCallback(trial, monitor="val_dice"),
+#         ],
+#     )
 
-    hyperparameters = dict(learning_rate=lr)
-    trainer.logger.log_hyperparams(hyperparameters)
+#     hyperparameters = dict(learning_rate=lr)
+#     trainer.logger.log_hyperparams(hyperparameters)
 
-    trainer.fit(
-        model=model,
-        train_dataloaders=DATALOADERS["train"],
-        val_dataloaders=DATALOADERS["val"],
-    )
+#     trainer.fit(
+#         model=model,
+#         train_dataloaders=DATALOADERS["train"],
+#         val_dataloaders=DATALOADERS["val"],
+#     )
 
-    return trainer.callback_metrics["val_dice"].item()
+#     return trainer.callback_metrics["val_dice"].item()
 
 
 if __name__ == "__main__":
