@@ -7,11 +7,11 @@ import shutil
 
 random.seed(7)
 
-
-post_disaster_masks = sorted(Path("data/256_patches/post-disaster/targets").glob("*"))
-post_disaster_images = sorted(Path("data/256_patches/post-disaster/images").glob("*"))
-pre_disaster_masks = sorted(Path("data/256_patches/pre-disaster/targets").glob("*"))
-pre_disaster_images = sorted(Path("data/256_patches/pre-disaster/images").glob("*"))
+base_path = "data/256_patches"
+post_disaster_masks = sorted((base_path / "post-disaster/targets").glob("*"))
+post_disaster_images = sorted((base_path / "post-disaster/images").glob("*"))
+pre_disaster_masks = sorted((base_path / "pre-disaster/targets").glob("*"))
+pre_disaster_images = sorted((base_path / "pre-disaster/images").glob("*"))
 
 all_data = list(
     zip(
