@@ -11,13 +11,11 @@ from torch_unet import UNET
 from torch_utils import (
     save_checkpoint,
     load_checkpoint,
-    get_loaders,
     check_accuracy,
     save_predictions_as_imgs,
 )
 
-# my import
-import segmodel
+from full_dataset import get_loaders
 
 # Hyperparameters
 LEARNING_RATE = 1e-4
@@ -31,49 +29,39 @@ PIN_MEMORY = True
 LOAD_MODEL = False
 IMG_DIR = "data/256_patches/images"
 MASK_DIR = "data/256_patches/targets/"
-CHECKPOINT_PATH = f"model_checkpoints/checkpoint.{IMAGE_WIDTH}.tar"
+#CHECKPOINT_PATH = f"model_checkpoints/checkpoint.{IMAGE_WIDTH}.tar"
 
 
-def train_fn(loader, model, optimizer, loss_fn, scaler):
-    loop = tqdm(loader) # progress bar
-
-    for batch_idx, (data, targets) in enumerate(loop):
-        data = data.to(device=DEVICE)
-        # important for binary crossentropy to cast as float??
-        targets = targets.float().unsqueeze(1).to(device=DEVICE)
-
-        # forward
-        # has to do with fp16 training
-        with torch.cuda.amp.autocast():
-            predictions = model(data)
-            loss = loss_fn(predictions, targets)
-
-        # backward
-        optimizer.zero_grad()
-        scaler.scale(loss).backward() # scaler has to do with FP16
-        scaler.step(optimizer)
-        scaler.update()
-
-        # update tqdm loop
-        loop.set_postfix(loss=loss.item())
 
 
-def main():
-    # TODO -- look up albumentations or whatever
-    transforms = A.Compose(
-        [
-            A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),  # not necessary
-            A.Rotate(limit=35, p=1.0),
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.1),
-            A.Normalize(  # basically just divides by 255
-                mean=[0.0, 0.0, 0.0],
-                std=[1.0, 1.0, 1.0],
-                max_pixel_value=255.0,
-            ),
-            ToTensorV2(),
-        ],
-    )
+
+def train(loader, model, optimizer, loss_fn, scaler):
+
+    def train_one_epoch():
+        loop = tqdm(loader) # progress bar
+
+        for batch_idx, (data, targets) in enumerate(loop):
+            data = data.to(device=DEVICE)
+            # important for binary crossentropy to cast as float??
+            targets = targets.float().unsqueeze(1).to(device=DEVICE)
+
+            # forward
+            # has to do with fp16 training
+            with torch.cuda.amp.autocast():
+                predictions = model(data)
+                loss = loss_fn(predictions, targets)
+
+            # backward
+            optimizer.zero_grad()
+            scaler.scale(loss).backward() # scaler has to do with FP16
+            scaler.step(optimizer)
+            scaler.update()
+
+            # update tqdm loop
+            loop.set_postfix(loss=loss.item())
+        
+    
+
     """
     val_transforms = A.Compose(
         [   A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH), # not necessary
@@ -125,4 +113,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    pass

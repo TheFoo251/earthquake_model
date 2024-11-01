@@ -13,10 +13,17 @@ import transforms
 from full_dataset import SiameseDataset, get_loaders
 from torch_utils import plot_loss_curves
 
+
+# check for CUDA
+if not torch.cuda.is_available():
+    print("CUDA isn't working!!")
+    exit()
+
+
 cudnn.benchmark = True
 
 NUM_EPOCHS = 30
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cuda:0")
 
 PATCH_SZ, BATCH_SZ = 256, 16  # lower batch size?
 

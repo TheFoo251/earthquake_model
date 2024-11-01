@@ -8,7 +8,7 @@ CONVNEXT = {
     "mask": v2.ToImage(),  # don't really need any
 }
 
-# currently, this can't have any randomness, or the image/mask don't match anymore
+# currently, this can't have any randomness, or the images don't line up anymore...
 DETECTOR = {
     "image": v2.Compose(
         [

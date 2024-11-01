@@ -1,4 +1,2 @@
-- research and implement various image segmentation loss terms
-- create a hypermodel that tests the loss terms and collects data
-- test out various biomimetic optimizers (like cuckoo search)
-- test the model with smaller amounts of data
+- refactor to just basically use pytorch
+- WRITE README

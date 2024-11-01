@@ -6,6 +6,7 @@ import torchvision.transforms.v2.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import pandas as pd
 
 
 def save_checkpoint(state, filename):
@@ -119,6 +120,9 @@ def plot_loss_curves(results):
     plt.legend()
 
     plt.show()
+
+def plot_dataframe(dataframe):
+    pass
 
 
 if __name__ == "__main__":
