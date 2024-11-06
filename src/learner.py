@@ -1,32 +1,8 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.optim import lr_scheduler
-import torch.backends.cudnn as cudnn
 from tqdm import tqdm
-from torchvision.models.convnext import LayerNorm2d
-import math
-import transforms
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 
-# other files
-from torch_utils import plot_loss_curves
-
-from models import ConvNextSystem
-
-
-# check for CUDA
-if not torch.cuda.is_available():
-    print("CUDA isn't working!!")
-    exit()
-
-
-cudnn.benchmark = True
-
-NUM_EPOCHS = 30
 DEVICE = torch.device("cuda:0")
-
-PATCH_SZ, BATCH_SZ = 256, 16  # lower batch size?
 
 
 class Metrics:
@@ -42,6 +18,7 @@ class Metrics:
         self.data[metric].append(value)
 
         # from https://www.learnpytorch.io/04_pytorch_custom_datasets/#78-plot-the-loss-curves-of-model-0
+
     def plot_loss_curves(self, show=True, save=None):
         """
         Plots training curves from metrics.
@@ -84,9 +61,7 @@ class Metrics:
 
 
 class Learner:
-    def __init__(
-        self, model_system, optimizer, scaler, scheduler, device=DEVICE
-    ):
+    def __init__(self, model_system, optimizer, scaler, scheduler, device=DEVICE):
         self.loader = model_system.loader
         self.model = model_system.model.to(DEVICE)
         self.optimizer = optimizer
@@ -170,36 +145,3 @@ class Learner:
             self.metrics.append("val_loss", val_loss)
             self.metrics.append("train_acc", train_accuracy)
             self.metrics.append("val_acc", val_accuracy)
-
-
-# --- METRICS ---
-
-
-if __name__ == "__main__":
-
-    model_system = ConvNextSystem()
-
-
-lr = 9e-6  # from optimizer study, close to 1e-5
-
-# here's where the transfer magic happens...
-
-optimizer = optim.AdamW(model_system.model.parameters(), lr=lr)
-
-
-# Decay LR by a factor of 0.1 every 7 epochs
-scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, "min")
-
-scaler = torch.cuda.amp.GradScaler()
-
-learner = Learner(
-    model_system=model_system,
-    optimizer=optimizer,
-    scaler=scaler,
-    scheduler=scheduler,
-    device=DEVICE,
-)
-
-learner.train_model(num_epochs=NUM_EPOCHS)
-
-learner.metrics.plot_loss_curves()
