@@ -8,6 +8,7 @@ from tqdm import tqdm
 from torchvision.models.convnext import LayerNorm2d
 import math
 import transforms
+import matplotlib.pyplot as plt 
 
 # other files
 from full_dataset import SiameseDataset, get_loaders
@@ -28,6 +29,60 @@ DEVICE = torch.device("cuda:0")
 PATCH_SZ, BATCH_SZ = 256, 16  # lower batch size?
 
 
+class Metrics:
+    def __init__(self):
+        self.data = {
+            "train_loss": [],
+            "val_loss": [],
+            "train_acc": [],
+            "val_acc": [],
+        }
+
+    def append(self, metric, value):
+        self.data[metric].append(value)
+
+        # from https://www.learnpytorch.io/04_pytorch_custom_datasets/#78-plot-the-loss-curves-of-model-0
+    def plot_loss_curves(self, show=True, save=None):
+        """
+        Plots training curves from metrics.
+        """
+
+        # Get the loss values of the results dictionary (training and test)
+        loss = self.data["train_loss"]
+        test_loss = self.data["val_loss"]
+
+        # Get the accuracy values of the self.data dictionary (training and test)
+        accuracy = self.data["train_acc"]
+        test_accuracy = self.data["val_acc"]
+
+        # Figure out how many epochs there were
+        epochs = range(len(self.data["train_loss"]))
+
+        # Setup a plot
+        plt.figure(figsize=(15, 7))
+
+        # Plot loss
+        plt.subplot(1, 2, 1)
+        plt.plot(epochs, loss, label="train_loss")
+        plt.plot(epochs, test_loss, label="val_loss")
+        plt.title("Loss")
+        plt.xlabel("Epochs")
+        plt.legend()
+
+        # Plot accuracy
+        plt.subplot(1, 2, 2)
+        plt.plot(epochs, accuracy, label="train_accuracy")
+        plt.plot(epochs, test_accuracy, label="val_accuracy")
+        plt.title("Accuracy")
+        plt.xlabel("Epochs")
+        plt.legend()
+
+        if show:
+            plt.show()
+        if not save == None:
+            plt.savefig(save)
+
+
 class Learner:
     def __init__(
         self, loader, model, optimizer, loss_fn, scaler, scheduler, device=DEVICE
@@ -39,12 +94,7 @@ class Learner:
         self.scaler = scaler
         self.scheduler = scheduler
         self.device = device
-        self.metrics = {
-            "train_loss": [],
-            "val_loss": [],
-            "train_acc": [],
-            "val_acc": [],
-        }
+        self.metrics = Metrics()
 
     def check_accuracy(self, loader):
         correct = 0
@@ -116,10 +166,10 @@ class Learner:
             )  # this assumes reduceLRonplateu, unfortunately
             train_accuracy = self.check_accuracy(loader=self.loader["train"])
             val_accuracy = self.check_accuracy(loader=self.loader["val"])
-            self.metrics["train_loss"].append(train_loss)
-            self.metrics["val_loss"].append(val_loss)
-            self.metrics["train_acc"].append(train_accuracy)
-            self.metrics["val_acc"].append(val_accuracy)
+            self.metrics.append("train_loss", train_loss)
+            self.metrics.append("val_loss", val_loss)
+            self.metrics.append("train_acc", train_accuracy)
+            self.metrics.append("val_acc", val_accuracy)
 
 
 # --- METRICS ---
