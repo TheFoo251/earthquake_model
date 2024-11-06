@@ -32,7 +32,7 @@ optimizer = optim.AdamW(model_system.model.parameters(), lr=lr)
 # Decay LR by a factor of 0.1 every 7 epochs
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, "min")
 
-scaler = torch.amp.Gradscaler("cuda")
+scaler = torch.amp.GradScaler('cuda')
 
 learner = Learner(
     model_system=model_system,

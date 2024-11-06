@@ -62,7 +62,7 @@ class Metrics:
 
 class Learner:
     def __init__(self, model_system, optimizer, scaler, scheduler, device=DEVICE):
-        self.loader = model_system.loader
+        self.loader = model_system.dataloaders
         self.model = model_system.model.to(DEVICE)
         self.optimizer = optimizer
         self.loss_fn = model_system.loss_fn
@@ -96,7 +96,7 @@ class Learner:
             self.optimizer.zero_grad()  # supposed to be first in this loop
 
             # forward
-            with torch.cuda.amp.autocast():  # automatically casts as fp16
+            with torch.amp.autocast("cuda"):  # automatically casts as fp16
                 predictions = self.model(data)
                 loss = self.loss_fn(predictions, targets)
 
