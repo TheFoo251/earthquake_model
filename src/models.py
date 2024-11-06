@@ -1,4 +1,4 @@
-from full_dataset import SiameseDataset, get_loaders
+from data import SiameseDataset, get_loaders
 from torchvision import models
 import torch.nn as nn
 from torchvision.models.convnext import LayerNorm2d

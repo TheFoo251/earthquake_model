@@ -6,7 +6,6 @@ from PIL import Image
 from torch.utils.data import Dataset
 import numpy as np
 from pathlib import Path
-from torchvision.transforms import v2
 import torch
 from torch.utils.data import DataLoader
 import random

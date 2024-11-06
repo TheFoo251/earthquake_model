@@ -1,7 +1,6 @@
 name: earthquake_testbed
 channels:
   - pytorch
-  - fastai
   - nvidia
   - conda-forge
 dependencies:
@@ -10,14 +9,7 @@ dependencies:
   - pytorch
   - torchvision
   - torchaudio
-  - pytorch-cuda=12.1
-  - fastai
-  - monai
-  - optuna
-  - optuna-integration
-  - seaborn
-  - jupyter
-  - lightning
+  - pytorch-cuda
   - pip:
       # pip-only packages
       - patchify

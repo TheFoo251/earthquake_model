@@ -6,7 +6,6 @@ import torchvision.transforms.v2.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-import pandas as pd
 
 
 def save_checkpoint(state, filename):
@@ -75,13 +74,3 @@ def imshow(imgs, title=None, show_colorbar=False):
             cbar = fig.colorbar(im, ax=axs[0, i])
     plt.ioff()
     plt.show()
-
-
-
-
-def plot_dataframe(dataframe):
-    pass
-
-
-if __name__ == "__main__":
-    pass

@@ -14,7 +14,7 @@ if not torch.cuda.is_available():
     print("CUDA isn't working!!")
     exit()
 
-NUM_EPOCHS = 30
+NUM_EPOCHS = 10
 DEVICE = torch.device("cuda:0")
 PATCH_SZ, BATCH_SZ = 256, 16  # lower batch size?
 cudnn.benchmark = True
