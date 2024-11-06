@@ -20,9 +20,7 @@ PATCH_SZ, BATCH_SZ = 256, 16  # lower batch size?
 cudnn.benchmark = True
 
 
-
-
-model_system = ConvNextSystem()
+model_system = ConvNextSystem(PATCH_SZ, BATCH_SZ)
 
 lr = 9e-6  # from optimizer study, close to 1e-5
 
@@ -34,7 +32,7 @@ optimizer = optim.AdamW(model_system.model.parameters(), lr=lr)
 # Decay LR by a factor of 0.1 every 7 epochs
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, "min")
 
-scaler = torch.cuda.amp.GradScaler()
+scaler = torch.amp.Gradscaler("cuda")
 
 learner = Learner(
     model_system=model_system,
