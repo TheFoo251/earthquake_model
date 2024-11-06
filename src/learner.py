@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
 import torch.backends.cudnn as cudnn
-from torchvision import models, transforms
 from tqdm import tqdm
 from torchvision.models.convnext import LayerNorm2d
 import math
@@ -11,8 +10,9 @@ import transforms
 import matplotlib.pyplot as plt 
 
 # other files
-from full_dataset import SiameseDataset, get_loaders
 from torch_utils import plot_loss_curves
+
+from models import ConvNextSystem
 
 
 # check for CUDA
@@ -85,12 +85,12 @@ class Metrics:
 
 class Learner:
     def __init__(
-        self, loader, model, optimizer, loss_fn, scaler, scheduler, device=DEVICE
+        self, model_system, optimizer, scaler, scheduler, device=DEVICE
     ):
-        self.loader = loader
-        self.model = model.to(DEVICE)
+        self.loader = model_system.loader
+        self.model = model_system.model.to(DEVICE)
         self.optimizer = optimizer
-        self.loss_fn = loss_fn
+        self.loss_fn = model_system.loss_fn
         self.scaler = scaler
         self.scheduler = scheduler
         self.device = device
@@ -175,42 +175,16 @@ class Learner:
 # --- METRICS ---
 
 
-model_weights = models.ConvNeXt_Base_Weights.DEFAULT
-dataset = SiameseDataset(patch_sz=PATCH_SZ, transforms=transforms.CONVNEXT, even=True)
-dataloaders = get_loaders(full_ds=dataset, batch_size=BATCH_SZ, split=0.8)
+if __name__ == "__main__":
+
+    model_system = ConvNextSystem()
 
 
 lr = 9e-6  # from optimizer study, close to 1e-5
 
 # here's where the transfer magic happens...
 
-model = models.convnext_base(weights=model_weights)
-
-# this section copied from https://medium.com/exemplifyml-ai/image-classification-with-resnet-convnext-using-pytorch-f051d0d7e098
-n_inputs = None
-for name, child in model.named_children():
-    if name == "classifier":
-        for sub_name, sub_child in child.named_children():
-            if sub_name == "2":
-                n_inputs = sub_child.in_features
-n_outputs = 2
-
-sequential_layers = nn.Sequential(
-    LayerNorm2d((1024,), eps=1e-06, elementwise_affine=True),
-    nn.Flatten(start_dim=1, end_dim=-1),
-    nn.Linear(n_inputs, 2048, bias=True),
-    nn.BatchNorm1d(2048),
-    nn.ReLU(),
-    nn.Dropout(0.1),
-    nn.Linear(2048, 2048),
-    nn.BatchNorm1d(2048),
-    nn.ReLU(),
-    nn.Linear(2048, n_outputs),
-)
-model.classifier = sequential_layers
-
-loss_fn = nn.CrossEntropyLoss()
-optimizer = optim.AdamW(model.parameters(), lr=lr)
+optimizer = optim.AdamW(model_system.model.parameters(), lr=lr)
 
 
 # Decay LR by a factor of 0.1 every 7 epochs
@@ -219,15 +193,13 @@ scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, "min")
 scaler = torch.cuda.amp.GradScaler()
 
 learner = Learner(
-    model=model,
+    model_system=model_system,
     optimizer=optimizer,
-    loss_fn=loss_fn,
     scaler=scaler,
     scheduler=scheduler,
     device=DEVICE,
-    loader=dataloaders,
 )
 
 learner.train_model(num_epochs=NUM_EPOCHS)
 
-plot_loss_curves(learner.metrics)
+learner.metrics.plot_loss_curves()
