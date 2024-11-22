@@ -14,6 +14,8 @@ data/
 
 run the `make_patches script`. Modify the script for the various patch sizes desired, the default is just 256.
 
+*Note*: Running `data.py` will show you what the data looks like.
+
 # Running the Model
 
 Install the prerequisites with `conda env create -f environment.yml`, then run `run.py`
